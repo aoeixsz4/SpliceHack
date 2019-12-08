@@ -1,5 +1,20 @@
                         SpliceHack -- Changelog
                     
+                          Next Version
+
+New Monsters
+- Caterwaul
+  - While the caterwaul originally appears in SLASH'EM, its SpliceHack
+    incarnation is somewhat different. It possesses a sonic scream attack
+    which can wake nearby monsters and deal sonic damage from a distance.
+    In addition, it is considered a humanoid, and has an increased difficulty
+    stat.
+
+
+Miscellaneous
+- Refactored screaming monster code to support a larger number of screaming
+  attacks.
+
                     Version 0.7.0: Stranger Days
 
 Cooking

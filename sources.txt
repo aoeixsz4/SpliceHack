@@ -57,6 +57,7 @@
     - Drow
     - ghoul mage
     - ghast
+    - caterwaul
     - movanic deva (only appear in planes)
     - monadic deva (only appear in planes)
     - astral deva (only appear in planes)

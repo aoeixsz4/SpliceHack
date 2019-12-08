@@ -1205,6 +1205,25 @@ Z = (195, 195, 195)
   .....CCAA...CA..
   ................
 }
+# tile 74 (caterwaul)
+{
+  ................
+  ................
+  ............EE..
+  ..............E.
+  ..............E.
+  .E...E........E.
+  .EE.EE.......EA.
+  .EEEEEEEEEEEEA..
+  .EEEEEEEEEEEEEA.
+  .HEHEEEEEEEEEEA.
+  .EEEEAEEEEEEEEA.
+  .EEEAAEEEEEEEEA.
+  .AAAAEEAAAEEEAA.
+  ..EEEEAAEEEEAA..
+  ................
+  ................
+}
 # tile 57 (tiger)
 {
   ................
