@@ -3409,9 +3409,7 @@ int dmg;
     boolean cancelled = (mtmp->mcan != 0);
     /* assumes that hero has to hear the monster's scream in
        order to be affected */
-    if (Deaf || Sonic_resistance)
-        cancelled = TRUE;
-    /* Only screams when a certain distance from our hero, can see them, and has the
+        /* Only screams when a certain distance from our hero, can see them, and has the
        available mspec */
     if (distu(mtmp->mx,mtmp->my) > 85 
         || !m_canseeu(mtmp) 
@@ -3419,25 +3417,20 @@ int dmg;
         || !rn2(5)) {
         return FALSE;
     }
-    
-    if (cancelled) {
-        if (canseemon(mtmp) && (Deaf || Sonic_resistance)) {
-            pline("It looks as if %s is yelling at you.", mon_nam(mtmp));
-        }
 
-        if ((m_canseeu(mtmp) && Blind && Deaf) || Sonic_resistance) {
-            You("sense a disturbing vibration in the air.");
-        } else if (m_canseeu(mtmp) && canseemon(mtmp) && !Deaf) {
-            pline("%s croaks hoarsely.", Monnam(mtmp));
-        } else {
-            You_hear("a hoarse croak nearby.");
-        }
+    if (canseemon(mtmp) && (Deaf || Sonic_resistance)) {
+        pline("It looks as if %s is yelling at you.", mon_nam(mtmp));
     }
-    
-    /* Set mspec->mused */
-    mtmp->mspec_used = mtmp->mspec_used + (dmg + rn2(6));
+    if (!cancelled && ((m_canseeu(mtmp) && Blind && Deaf) || Sonic_resistance)) {
+        You("sense a disturbing vibration in the air.");
+    } else if (m_canseeu(mtmp) && canseemon(mtmp) && !Deaf && cancelled) {
+        pline("%s croaks hoarsely.", Monnam(mtmp));
+    } else if (cancelled && !Deaf) {
+        You_hear("a hoarse croak nearby.");
+    }
 
-    if (cancelled)
+    mtmp->mspec_used = mtmp->mspec_used + (dmg + rn2(6));
+    if (cancelled || Deaf || Sonic_resistance)
         return FALSE;
 
     /* scream attacks */
@@ -3453,6 +3446,7 @@ int dmg;
         }
         Your("mind reels from the noise!");
         make_stunned((HStun & TIMEOUT) + (long) dmg, TRUE);
+        aggravate(); /* Nazgul scream VERY loudly */
         stop_occupation();
         break;
     case AD_LOUD:
