@@ -58,6 +58,7 @@
     - ghoul mage
     - ghast
     - caterwaul
+    - Sabre-toothed cat
     - movanic deva (only appear in planes)
     - monadic deva (only appear in planes)
     - astral deva (only appear in planes)

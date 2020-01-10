@@ -9,11 +9,10 @@ New Monsters
     which can wake nearby monsters and deal sonic damage from a distance.
     In addition, it is considered a humanoid, and has an increased difficulty
     stat.
-
-
-Miscellaneous
-- Refactored screaming monster code to support a larger number of screaming
-  attacks.
+- Sabre-Toothed Cat
+  - Difficulty slightly upped from SLASH'EM.
+  - Like all felines, is tameable by way of catnip, making it a very powerful
+    and relatively easy to obtain pet.
 
                     Version 0.7.0: Stranger Days
 
