@@ -3302,6 +3302,8 @@ struct obj* obj;
          * work properly. */
         case BULLWHIP:
         case QUILL:
+        case FRAG_GRENADE:
+        case GAS_GRENADE:
             return NULL;
         /* Any other cases for specific object types go here. */
         case SHIELD_OF_RESONANCE:

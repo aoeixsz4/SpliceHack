@@ -3581,7 +3581,10 @@ boolean shk_buying;
         break;
     case ARMOR_CLASS:
     case WEAPON_CLASS:
-        if (obj->spe > 0)
+        /* Don't buy activated explosives! */
+		if (is_grenade(obj) && obj->oarmed) 
+            tmp = 0L;
+        else if (obj->spe > 0)
             tmp += 10L * (long) obj->spe;
         break;
     case TOOL_CLASS:

@@ -1651,6 +1651,8 @@ light_cocktail(optr)
 struct obj **optr;
 {
     struct obj *obj = *optr; /* obj is a potion of oil */
+    const char *objnam =
+	    obj->otyp == POT_OIL ? "potion" : "stick";
     char buf[BUFSZ];
     boolean split1off;
 
@@ -1660,7 +1662,7 @@ struct obj **optr;
     }
 
     if (obj->lamplit) {
-        You("snuff the lit potion.");
+        You("snuff the lit %s.", objnam);
         end_burn(obj, TRUE);
         /*
          * Free & add to re-merge potion.  This will average the
@@ -1679,18 +1681,24 @@ struct obj **optr;
     if (split1off)
         obj = splitobj(obj, 1L);
 
-    You("light %spotion.%s", shk_your(buf, obj),
+    You("light %s%s.%s", shk_your(buf, obj), objnam,
         Blind ? "" : "  It gives off a dim light.");
 
     if (obj->unpaid && costly_spot(u.ux, u.uy)) {
         /* Normally, we shouldn't both partially and fully charge
          * for an item, but (Yendorian Fuel) Taxes are inevitable...
          */
-        check_unpaid(obj);
-        verbalize("That's in addition to the cost of the potion, of course.");
+        if (obj->otyp != STICK_OF_DYNAMITE) {
+            check_unpaid(obj);
+            verbalize("That's in addition to the cost of the potion, of course.");
+        } else {
+            const char *ithem = obj->quan > 1L ? "them" : "it";
+		    verbalize("You burn %s, you bought %s!", ithem, ithem);
+        }
         bill_dummy_object(obj);
     }
     makeknown(obj->otyp);
+    if (obj->otyp == STICK_OF_DYNAMITE) obj->yours=TRUE;
 
     begin_burn(obj, FALSE); /* after shop billing */
     if (split1off) {
@@ -4190,6 +4198,23 @@ doapply()
     case TOUCHSTONE:
         use_stone(obj);
         break;
+	case AUTO_SHOTGUN:
+	case SUBMACHINE_GUN:		
+		if (obj->altmode == WP_MODE_AUTO) obj-> altmode = WP_MODE_SINGLE;
+		else obj->altmode = WP_MODE_AUTO;
+		You("switch %s to %s mode.", yname(obj), 
+			(obj->altmode ? "semi-automatic" : "full automatic"));
+		break;
+	case FRAG_GRENADE:
+	case GAS_GRENADE:
+		if (!obj->oarmed) {
+			You("arm %s.", yname(obj));
+			arm_bomb(obj, TRUE);
+		} else pline("It's already armed!");
+		break;
+	case STICK_OF_DYNAMITE:
+		light_cocktail(obj);
+		break;
     default:
         /* Pole-weapons can strike at a distance */
         if (is_pole(obj)) {

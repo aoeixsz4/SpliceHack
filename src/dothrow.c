@@ -196,7 +196,26 @@ int shotlimit;
         		if (((shotlimit <= 0) || (shotlimit >= multishot)) &&
         			(obj->quan >= multishot))
         		    You("let fly a volley of %s!", xname(obj));
-    	  }
+    	}
+
+        /* Rate of fire is intrinsic to the weapon - cannot be user selected
+	     * except via altmode
+	     * Only for valid launchers 
+	     * (currently oc_rof conflicts with wsdam)
+	     */
+	    if (launcher && is_launcher(launcher))
+	    {
+            if (objects[(launcher->otyp)].oc_rof) 
+                multishot += (objects[(launcher->otyp)].oc_rof - 1);
+            if (launcher->altmode == WP_MODE_SINGLE)
+            /* weapons switchable b/w full/semi auto */
+                multishot = 1;
+            else if (launcher->altmode == WP_MODE_BURST)
+                multishot = ((multishot > 3) ? (multishot / 3) : 1);
+            /* else it is auto == no change */
+	    }
+
+	    if ((long) multishot > obj->quan) multishot = (int)obj->quan;
 
         /* crossbows are slow to load and probably shouldn't allow multiple
            shots at all, but that would result in players never using them;

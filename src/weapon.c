@@ -128,6 +128,10 @@ struct obj *obj;
         if (is_ammo(obj))
             descr = "bolt";
         break;
+    case P_FIREARM:
+        if (is_bullet(obj))
+            descr = "ammunition";
+        break;
     case P_FLAIL:
         if (obj->otyp == GRAPPLING_HOOK)
             descr = "hook";
@@ -586,6 +590,7 @@ int x;
 
 /* TODO: have monsters use aklys' throw-and-return */
 static NEARDATA const int rwep[] = {
+    FRAG_GRENADE, GAS_GRENADE, ROCKET, BULLET, SHOTGUN_SHELL,
     ORB_OF_PERMAFROST, DWARVISH_SPEAR, ELVEN_SPEAR, SPEAR,
     ORCISH_SPEAR, JAVELIN, WINDMILL_BLADE, THROWING_AXE,
     SHURIKEN, LIGHT_ARROW, 
@@ -740,7 +745,7 @@ register struct monst *mtmp;
                 if (!propellor)
                     propellor = (oselect(mtmp, ELVEN_BOW));
                 /* WAC added dark elven bow */
-          		  if (!propellor)
+          		if (!propellor)
                     propellor = (oselect(mtmp, DARK_ELVEN_BOW));
                 if (!propellor)
                     propellor = oselect(mtmp, BOW);
@@ -752,6 +757,23 @@ register struct monst *mtmp;
                 break;
             case P_CROSSBOW:
                 propellor = oselect(mtmp, CROSSBOW);
+            case P_FIREARM:
+                if ((objects[rwep[i]].w_ammotyp) == WP_BULLET) {
+                    propellor = (oselect(mtmp, HEAVY_MACHINE_GUN));
+                    if (!propellor) propellor = (oselect(mtmp, SUBMACHINE_GUN));
+                    if (!propellor) propellor = (oselect(mtmp, SNIPER_RIFLE));
+                    if (!propellor) propellor = (oselect(mtmp, RIFLE));
+                    if (!propellor) propellor = (oselect(mtmp, PISTOL));
+                } else if ((objects[rwep[i]].w_ammotyp) == WP_SHELL) {
+                    propellor = (oselect(mtmp, AUTO_SHOTGUN));
+                    if (!propellor) propellor = (oselect(mtmp, SHOTGUN));
+                } else if ((objects[rwep[i]].w_ammotyp) == WP_ROCKET) {
+                    propellor = (oselect(mtmp, ROCKET_LAUNCHER));
+                } else if ((objects[rwep[i]].w_ammotyp) == WP_GRENADE) {
+                    propellor = (oselect(mtmp, GRENADE_LAUNCHER));
+                    if (!propellor) propellor = &zeroobj;  /* can toss grenades */
+                }
+                break;
             }
             if (!tmpprop) tmpprop = propellor;
             if ((otmp = MON_WEP(mtmp)) && mwelded(otmp) && otmp != propellor

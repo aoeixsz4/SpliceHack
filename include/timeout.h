@@ -32,6 +32,7 @@ enum timeout_types {
     BURN_OBJECT,
     HATCH_EGG,
     FIG_TRANSFORM,
+    BOMB_BLOW,
     MELT_ICE_AWAY,
     MOLDY_CORPSE,
 

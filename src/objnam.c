@@ -1163,6 +1163,11 @@ unsigned doname_flags;
             Strcat(prefix, sitoa(obj->spe));
             Strcat(prefix, " ");
         }
+        /* bombs */
+        if (obj->otyp == STICK_OF_DYNAMITE) {
+		    if (obj->lamplit) Strcat(bp, " (lit)");
+		} else if (is_grenade(obj))
+		    if (obj->oarmed) Strcat(bp, " (armed)");
         break;
     case TOOL_CLASS:
         if (obj->owornmask & (W_TOOL | W_SADDLE)) { /* blindfold */
@@ -2869,6 +2874,9 @@ STATIC_OVL NEARDATA const struct o_range o_ranges[] = {
     { "dragon scale mail", ARMOR_CLASS, GRAY_DRAGON_SCALE_MAIL,
       VOID_DRAGON_SCALE_MAIL },
     { "sword", WEAPON_CLASS, SHORT_SWORD, KATANA },
+    { "firearm", 	WEAPON_CLASS, PISTOL, AUTO_SHOTGUN },
+	{ "gun", 	WEAPON_CLASS, PISTOL, AUTO_SHOTGUN },
+	{ "grenade", 	WEAPON_CLASS, FRAG_GRENADE, GAS_GRENADE },
     { "venom", VENOM_CLASS, BLINDING_VENOM, ACID_VENOM },
     { "gray stone", GEM_CLASS, LUCKSTONE, FLINT },
     { "grey stone", GEM_CLASS, LUCKSTONE, FLINT },
@@ -2910,6 +2918,12 @@ static struct alt_spellings {
     { "grapnel", GRAPPLING_HOOK },
     { "grapple", GRAPPLING_HOOK },
     { "protection from shape shifters", RIN_PROTECTION_FROM_SHAPE_CHAN },
+    { "handgun", PISTOL },
+	{ "hand gun", PISTOL },
+	{ "revolver", PISTOL },
+	{ "bazooka", ROCKET_LAUNCHER },
+	{ "hand grenade", FRAG_GRENADE },
+	{ "dynamite", STICK_OF_DYNAMITE },
     /* if we ever add other sizes, move this to o_ranges[] with "bag" */
     { "box", LARGE_BOX },
     /* normally we wouldn't have to worry about unnecessary <space>, but
