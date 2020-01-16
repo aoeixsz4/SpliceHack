@@ -554,6 +554,10 @@ register struct monst *mtmp;
     } else if (find_misc(mtmp)) {
         if (use_misc(mtmp) != 0)
             return 1;
+    } 
+    
+    if (mtmp->mhp < mtmp->mhpmax / 2) {
+        m_choose_tech(mtmp);
     }
 
     /* Demonic Blackmail! */

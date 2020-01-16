@@ -200,6 +200,11 @@ struct obj *otmp, *mwep;
         else if (monsndx(mtmp->data) == PM_AVENGER_ARCHON)
             multishot += 3;
 
+        /* Monsters using the multishot tech */
+        if (mtmp->mtechno == T_FLURRY) {
+            multishot++;
+        }
+
         /* this portion is different from hero multishot; from slash'em?
          */
         /* Elven Craftsmanship makes for light, quick bows */

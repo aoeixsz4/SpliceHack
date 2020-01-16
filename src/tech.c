@@ -599,6 +599,41 @@ const char *verb;
     return otmp;
 }
 
+int
+m_choose_tech(mtmp)
+struct monst *mtmp;
+{
+	int tech_no = T_FLURRY;
+
+	if (tech_no) {
+		return m_techeffects(mtmp, tech_no);
+	}
+	return 0;
+}
+
+int
+m_techeffects(mtmp, tech_no)
+struct monst *mtmp;
+int tech_no;
+{
+	int take_turn = 0;
+
+	switch(tech_no) {
+		case T_FLURRY:
+			if (canseemon(mtmp)) {
+				pline("The hands of %s become blurs as %s reaches for %s quiver!", 
+					mon_nam(mtmp), mhe(mtmp), mhis(mtmp));
+			}
+			mtmp->mtechno = tech_no;
+			take_turn = 0;
+			break;
+		default:
+			impossible ("monster attempting invalid tech: %d", tech_no);
+			break;
+	}
+	return take_turn;
+}
+
 
 /* gettech is reworked getspell */
 /* reworked class special effects code */
