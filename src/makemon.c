@@ -1858,6 +1858,9 @@ int mmflags;
     if (!in_mklev)
         newsym(mtmp->mx, mtmp->my); /* make sure the mon shows up */
 
+    /* Initialize the monster's techniques */
+    m_init_techs(mtmp);
+
     return mtmp;
 }
 

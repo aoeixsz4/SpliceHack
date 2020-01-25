@@ -680,6 +680,8 @@ register struct monst *mtmp;
         tmp -= 2;
     if (tmp <= 0)
         tmp = 1;
+    if (mtech_active(mtmp, T_KIII))
+        tmp += 4;
 
     /* make eels visible the moment they hit/miss us */
     if (mdat->mlet == S_EEL && mtmp->minvis && cansee(mtmp->mx, mtmp->my)) {
@@ -1104,6 +1106,8 @@ register struct attack *mattk;
     switch (mattk->adtyp) {
     case AD_PHYS:
     case AD_CLOB:
+        if (mtech_active(mtmp, T_KIII))
+            dmg *= 2;
         if (mattk->aatyp == AT_HUGS && !sticks(youmonst.data)) {
             if (!u.ustuck && rn2(2)) {
                 if (u_slip_free(mtmp, mattk)) {

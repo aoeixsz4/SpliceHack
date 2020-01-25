@@ -2525,6 +2525,7 @@ E boolean FDECL(mtech_active, (struct monst *, int));
 E boolean FDECL(mtech_available, (struct monst *, int));
 E int FDECL(m_choose_tech, (struct monst *));
 E void FDECL(mtech_timeout, (struct monst *));
+E void FDECL(m_init_techs, (struct monst *));
 
 /* ### teleport.c ### */
 

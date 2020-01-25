@@ -212,7 +212,8 @@ mon_regen(mon, digest_meal)
 struct monst *mon;
 boolean digest_meal;
 {
-    if (mon->mhp < mon->mhpmax && (moves % 20 == 0 || regenerates(mon->data)))
+    if (mon->mhp < mon->mhpmax && (moves % 20 == 0 || regenerates(mon->data)
+        || mtech_active(mon, T_CHI_HEALING)))
         mon->mhp++;
     if (mon->mspec_used)
         mon->mspec_used--;
@@ -554,8 +555,9 @@ register struct monst *mtmp;
     } else if (find_misc(mtmp)) {
         if (use_misc(mtmp) != 0)
             return 1;
-    } else if (m_choose_tech(mtmp))
-        return 1;
+    } else
+        m_choose_tech(mtmp);
+        /* TODO: Change location of call */
 
     /* Demonic Blackmail! */
     if (nearby && mdat->msound == MS_BRIBE && mtmp->mpeaceful && !mtmp->mtame

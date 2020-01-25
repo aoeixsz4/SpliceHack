@@ -2,6 +2,12 @@
 
                     New Version
 
+Monster techniques
+- Monsters can use the same techniques available to the player.
+- The Wizard of Yendor has all the techniques that the player has.
+  While techniques make the game easier, the more the player knows,
+  the more dangerous the Wizard will be.
+
 Monsters
 - New Monster: Orc Warlord
   - Not randomly generated. Grown up form of an orc captain. The leader of the
@@ -38,7 +44,7 @@ Items
 
 Balance
 - Stop randomly generating penguins, since the fact that eating them makes the
-  Gods angry is confusing.
+  Gods angry is confusing for unspoiled players.
 
 Bug Fixes
 - Water elementals can be neutral deific minions agian.

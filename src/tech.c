@@ -28,6 +28,8 @@ static int NDECL(blitz_g_slam);
 static int NDECL(blitz_dash);
 static int NDECL(blitz_power_surge);
 static int NDECL(blitz_spirit_bomb);
+STATIC_DCL boolean FDECL(m_do_ward, (struct monst*, unsigned long));
+STATIC_DCL void FDECL(m_learn_tech, (struct monst*, int));
 
 static NEARDATA schar delay;            /* moves left for tinker/energy draw */
 static NEARDATA const char revivables[] = { ALLOW_FLOOROBJ, FOOD_CLASS, 0 };
@@ -599,6 +601,64 @@ const char *verb;
     return otmp;
 }
 
+void
+m_init_techs(mtmp)
+struct monst *mtmp;
+{
+	struct permonst* mdat = mtmp->data;
+	int pm = monsndx(mdat);
+	int i;
+
+	/* Not all monsters should get techniques all the time. That would make 
+	   things incredibly chaotic. */
+	/*
+	if (!is_prince(mdat) && !is_lord(mdat) && !(mdat->geno & G_UNIQ)
+		&& !rn2(30))
+		return;
+	*/
+	
+	if (is_dwarf(mdat)) {
+		m_learn_tech(mtmp, T_RAGE);
+	} else if (is_elf(mdat)) {
+		m_learn_tech(mtmp, T_FLURRY);
+	} else if (is_gnome(mdat)) {
+		m_learn_tech(mtmp, T_VANISH);
+	}
+
+	switch(pm) {
+	case PM_LORD_SATO:
+	case PM_ASHIKAGA_TAKAUJI:
+	case PM_ROSHI:
+	case PM_SAMURAI:
+		m_learn_tech(mtmp, T_KIII);
+		break;
+	case PM_MASTER_KAEN:
+	case PM_GRAND_MASTER:
+		m_learn_tech(mtmp, T_CHI_HEALING);
+		/*FALLTHRU*/
+	case PM_MARTIAL_ARTIST:
+	case PM_MARTIAL_MASTER:
+	case PM_ABBOT:
+	case PM_MONK:
+		m_learn_tech(mtmp, T_WARD_FIRE);
+		m_learn_tech(mtmp, T_WARD_COLD);
+		m_learn_tech(mtmp, T_WARD_ELEC);
+		break;
+	case PM_HOBBIT:
+		m_learn_tech(mtmp, T_BLINK);
+		break;
+	case PM_WIZARD_OF_YENDOR:
+		/* The Wizard of Yendor automatically knows all techniques
+		   known by the player. A player that learns many strong
+		   techniques will have an easier time reaching the Amulet,
+		   but a significantly harder ascension run. */
+		for (i = 0; i < MAXTECH; i++) {
+			if (tech_known(i)) 
+				m_learn_tech(mtmp, i);
+		}
+	}
+}
+
 int
 m_choose_tech(mtmp)
 struct monst *mtmp;
@@ -606,7 +666,8 @@ struct monst *mtmp;
 	int tech_no = rn2(MAXTECH);
 
 	if (is_animal(mtmp->data) || mindless(mtmp->data)
-		|| (mtmp->mhp > mtmp->mhpmax / 2))
+		|| (mtmp->mhp > mtmp->mhpmax / 2)
+		|| !mtmp->mtechs)
         return 0;
 
 	if (mtech_available(mtmp, tech_no)) {
@@ -621,10 +682,11 @@ struct monst *mtmp;
 int tech_no;
 {
 	int take_turn = 0;
+	boolean cansee = canseemon(mtmp);
 
 	switch(tech_no) {
 		case T_VANISH:
-			if (!mtmp->minvis && canseemon(mtmp)) 
+			if (!mtmp->minvis && cansee) 
 				pline("%s twirls, then disappears a puff of smoke!", Monnam(mtmp));
 			else if (canseemon(mtmp)) 
 				pline("%s twirls faster and faster, until %s is just a blur!", Monnam(mtmp), mhe(mtmp));
@@ -633,17 +695,44 @@ int tech_no;
 			newsym(mtmp->mx,mtmp->my);      /* update position */
 			break;
 		case T_RAGE:
-			if (canseemon(mtmp))
+			if (cansee)
 				pline("%s erupts into a towering rage!", Monnam(mtmp));
 			mtmp->mhpmax += (50 + mtmp->m_lev);
 			mtmp->mhp += (50 + mtmp->m_lev);
 			break;
 		case T_FLURRY:
-			if (canseemon(mtmp)) {
+			if (cansee) {
 				pline("The hands of %s become blurs as %s reaches for %s quiver!", 
 					mon_nam(mtmp), mhe(mtmp), mhis(mtmp));
 			}
 			break;
+		case T_BLINK:
+			if (cansee) {
+				pline("The flow of time slows down around %s!", mon_nam(mtmp));
+				mon_adjust_speed(mtmp, 4, (struct obj *) 0);
+			}
+			break;
+		case T_WARD_COLD:
+			m_do_ward(mtmp, MR_COLD);
+			break;
+		case T_WARD_ELEC:
+			m_do_ward(mtmp, MR_ELEC);
+			break;
+		case T_WARD_FIRE:
+			m_do_ward(mtmp, MR_FIRE);
+			break;
+		case T_CHI_HEALING:
+			if (cansee && Role_if(PM_MONK))
+				pline("%s focuses their chi towards healing.", Monnam(mtmp));
+			else if (cansee)
+				pline("%s concentrates for a moment, and begins to look better.", Monnam(mtmp));
+			break;
+		case T_KIII:
+			aggravate();
+			if (cansee)
+				pline(Deaf ? "%s screams in fury!" : "%s screams \"KIIILLL!\"", Monnam(mtmp));
+			else
+				You_hear("someone screaming, \"KIIILLL!\"");
 		default:
 			impossible ("monster attempting invalid tech: %d", tech_no);
 			break;
@@ -651,6 +740,34 @@ int tech_no;
 	mtmp->mtechs_active |= ((uint64_t)1 << tech_no);
 	/* pline("%llu - %llu", mtmp->mtechs_active, ((uint64_t)1 << tech_no)); */
 	return take_turn;
+}
+
+STATIC_DCL boolean
+m_do_ward(mtmp, intrinsic)
+struct monst* mtmp;
+unsigned long intrinsic;
+{
+	if (mtmp->mextrinsics & intrinsic)
+		return FALSE;
+	boolean cansee = canseemon(mtmp);
+	mtmp->mextrinsics |= intrinsic;
+	if (cansee && !Role_if(PM_MONK))
+		pline("%s invokes an elemental ward!", Monnam(mtmp));
+	else if (cansee)
+		pline("%s invokes a ward against %s!", Monnam(mtmp), 
+			intrinsic == MR_FIRE ? "flame" 
+			: intrinsic == MR_COLD ? "ice"
+			: "lightning");
+	return TRUE;
+}
+
+STATIC_DCL void
+m_learn_tech(mtmp, tech_no)
+struct monst* mtmp;
+int tech_no;
+{
+	if (!mtech_available(mtmp, tech_no) && !mtech_active(mtmp, tech_no))
+		mtmp->mtechs |= ((uint64_t)1 << tech_no);
 }
 
 boolean
@@ -676,7 +793,6 @@ struct monst *mtmp;
 	int tech_no = rn2(MAXTECH);
 
 	if (mtech_active(mtmp, T_RAGE)) {
-		pline("ouch");
 		if (mtmp->mhp > 1) mtmp->mhp -= 1;
 		if (mtmp->mhpmax > 1) mtmp->mhpmax -= 1;
 	}
@@ -685,11 +801,13 @@ struct monst *mtmp;
 		mtmp->mtechs_active &= ~(uint64_t) tech_no;
 		switch(tech_no) {
 			case T_RAGE:
+			case T_KIII:
 				if (canseemon(mtmp)) {
-					pline("%s calms down.", Monnam(mtmp));
+					pline("%s calms down a little.", Monnam(mtmp));
 				}
 				break;
 			case T_VANISH:
+			case T_BLINK:
 				mon_adjust_speed(mtmp, -4, (struct obj *) 0);
 				break;
 			default:
