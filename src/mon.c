@@ -827,8 +827,7 @@ mcalcdistress()
         mon_regen(mtmp, FALSE);
 
         /* techs time out */
-        if (mtmp->mtechno != 0)
-            m_tech_timeout(mtmp);
+        mtech_timeout(mtmp);
 
         if (mtmp->mfading && mtmp->mfading == 1) {
             if canseemon(mtmp)

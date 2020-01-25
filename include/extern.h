@@ -2520,9 +2520,11 @@ E int FDECL(tech_inuse, (int));
 E void NDECL(tech_timeout);
 E boolean FDECL(tech_known, (SHORT_P));
 E void FDECL(learntech, (SHORT_P,long,int));
-E int FDECL(m_techeffects, (struct monst *, int));
+E int FDECL(mtecheffects, (struct monst *, int));
+E boolean FDECL(mtech_active, (struct monst *, int));
+E boolean FDECL(mtech_available, (struct monst *, int));
 E int FDECL(m_choose_tech, (struct monst *));
-E void FDECL(m_tech_timeout, (struct monst *));
+E void FDECL(mtech_timeout, (struct monst *));
 
 /* ### teleport.c ### */
 

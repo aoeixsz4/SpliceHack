@@ -201,7 +201,7 @@ struct obj *otmp, *mwep;
             multishot += 3;
 
         /* Monsters using the multishot tech */
-        if (mtmp->mtechno == T_FLURRY) {
+        if (mtech_active(mtmp, T_FLURRY)) {
             multishot++;
         }
 

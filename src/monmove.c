@@ -554,11 +554,8 @@ register struct monst *mtmp;
     } else if (find_misc(mtmp)) {
         if (use_misc(mtmp) != 0)
             return 1;
-    } 
-    
-    if (mtmp->mhp < mtmp->mhpmax / 2) {
-        m_choose_tech(mtmp);
-    }
+    } else if (m_choose_tech(mtmp))
+        return 1;
 
     /* Demonic Blackmail! */
     if (nearby && mdat->msound == MS_BRIBE && mtmp->mpeaceful && !mtmp->mtame
