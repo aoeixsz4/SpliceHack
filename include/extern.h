@@ -2522,6 +2522,7 @@ E boolean FDECL(tech_known, (SHORT_P));
 E void FDECL(learntech, (SHORT_P,long,int));
 E int FDECL(m_techeffects, (struct monst *, int));
 E int FDECL(m_choose_tech, (struct monst *));
+E void FDECL(m_tech_timeout, (struct monst *));
 
 /* ### teleport.c ### */
 

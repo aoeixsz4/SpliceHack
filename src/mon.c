@@ -826,6 +826,10 @@ mcalcdistress()
         /* regenerate hit points */
         mon_regen(mtmp, FALSE);
 
+        /* techs time out */
+        if (mtmp->mtechno != 0)
+            m_tech_timeout(mtmp);
+
         if (mtmp->mfading && mtmp->mfading == 1) {
             if canseemon(mtmp)
                 pline(Hallucination ? "%s explodes into multicolored polygons!" : "%s vanishes in a puff of smoke!", Monnam(mtmp));

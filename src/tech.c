@@ -603,7 +603,7 @@ int
 m_choose_tech(mtmp)
 struct monst *mtmp;
 {
-	int tech_no = T_FLURRY;
+	int tech_no = T_RAGE;
 
 	if (tech_no) {
 		return m_techeffects(mtmp, tech_no);
@@ -619,19 +619,61 @@ int tech_no;
 	int take_turn = 0;
 
 	switch(tech_no) {
+		case T_VANISH:
+			if (!mtmp->minvis && canseemon(mtmp)) 
+				pline("%s twirls, then disappears a puff of smoke!", Monnam(mtmp));
+			else if (canseemon(mtmp)) 
+				pline("%s twirls faster and faster, until %s is just a blur!", Monnam(mtmp), mhe(mtmp));
+			mtmp->minvis = 1;
+			mon_adjust_speed(mtmp, 4, (struct obj *) 0);
+			newsym(mtmp->mx,mtmp->my);      /* update position */
+			mtmp->mt_timeout = rn1(1000,500);
+			break;
+		case T_RAGE:
+			if (canseemon(mtmp))
+				pline("%s erupts into a towering rage!", Monnam(mtmp));
+			mtmp->mhpmax += (50 + mtmp->m_lev);
+			mtmp->mhp += (50 + mtmp->m_lev);
+			mtmp->mt_timeout = rn1(1000,500);
+			break;
 		case T_FLURRY:
 			if (canseemon(mtmp)) {
 				pline("The hands of %s become blurs as %s reaches for %s quiver!", 
 					mon_nam(mtmp), mhe(mtmp), mhis(mtmp));
 			}
-			mtmp->mtechno = tech_no;
-			take_turn = 0;
+			mtmp->mt_timeout = rn1(1000,500);
 			break;
 		default:
 			impossible ("monster attempting invalid tech: %d", tech_no);
 			break;
 	}
+	mtmp->mtechno = tech_no;
 	return take_turn;
+}
+
+void
+m_tech_timeout(mtmp)
+struct monst *mtmp;
+{
+	int tech_no = mtmp->mtechno;
+
+	switch(tech_no) {
+		case T_RAGE:
+			if (mtmp->mhp > 1) mtmp->mhp -= 1;
+			if (mtmp->mhpmax > 1) mtmp->mhpmax -= 1;
+			break;
+		default:
+			impossible("monster timing out invalid tech: %d", tech_no);
+			break;
+	}
+	/* Time out duration until techs are usable again */
+	if(mtmp->mt_timeout) mtmp->mt_timeout -= 1;
+	/* Each turn, there is a 1/30 chance that a monster's tech effect ends. */
+	if (!rn2(30)) {
+		mtmp->mtechno = 0;
+		switch(tech_no) {
+		}
+	}
 }
 
 
