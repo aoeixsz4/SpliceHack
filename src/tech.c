@@ -713,13 +713,16 @@ int tech_no;
 			}
 			break;
 		case T_WARD_COLD:
-			m_do_ward(mtmp, MR_COLD);
+			if (!(mtmp->mextrinsics & MR_COLD))
+				m_do_ward(mtmp, MR_COLD);
 			break;
 		case T_WARD_ELEC:
-			m_do_ward(mtmp, MR_ELEC);
+			if (!(mtmp->mextrinsics & MR_ELEC))
+				m_do_ward(mtmp, MR_ELEC);
 			break;
 		case T_WARD_FIRE:
-			m_do_ward(mtmp, MR_FIRE);
+			if (!(mtmp->mextrinsics & MR_FIRE))
+				m_do_ward(mtmp, MR_FIRE);
 			break;
 		case T_CHI_HEALING:
 			if (cansee && Role_if(PM_MONK))
@@ -798,7 +801,7 @@ struct monst *mtmp;
 	}
 	/* Each turn, one tech is randomly timed out. */
 	if (mtech_active(mtmp, tech_no)) {
-		mtmp->mtechs_active &= ~(uint64_t) tech_no;
+		mtmp->mtechs_active &= ~ ((uint64_t)1 << tech_no);
 		switch(tech_no) {
 			case T_RAGE:
 			case T_KIII:
