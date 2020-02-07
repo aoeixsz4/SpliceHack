@@ -1141,31 +1141,21 @@ int tech_no;
 	    	aggravate();
 
 			techt_inuse(tech_no) = d(2,6) + (techlev(tech_no)) + 2;
-
 			incr_itimeout(&HFast, techt_inuse(tech_no));
-				#if 0
+			
 	    	for(i = -5; i <= 5; i++) for(j = -5; j <= 5; j++)
-		    if(isok(u.ux+i, u.uy+j) && (mtmp = m_at(u.ux+i, u.uy+j))) {
-		    	if (mtmp->mtame != 0) {
-		    	    struct permonst *ptr = mtmp->data;
-			    struct monst *mtmp2;
-		    	    int ttime = techt_inuse(tech_no);
-		    	    int type = little_to_big(monsndx(ptr));
-#if 0
-		    	    mtmp2 = tamedog(mtmp, (struct obj *) 0);
-			    if (mtmp2)
-				mtmp = mtmp2;
-#endif
-tamedog(mtmp, (struct obj *) 0);
-
-		    	    if (type && type != monsndx(ptr)) {
-				ptr = &mons[type];
-		    	    	mon_spec_poly(mtmp, ptr, ttime, FALSE,
-					canseemon(mtmp), FALSE, TRUE);
-		    	    }
-		    	}
-		    }
-				#endif
+				if(isok(u.ux+i, u.uy+j) && (mtmp = m_at(u.ux+i, u.uy+j))) {
+					if (mtmp->mtame != 0) {
+						struct permonst *ptr = mtmp->data;
+						int type = little_to_big(monsndx(ptr));
+						tamedog(mtmp, (struct obj *) 0);
+						if (type && type != monsndx(ptr)) {
+							ptr = &mons[type];
+							newcham(mtmp, ptr, FALSE, TRUE);
+							mtmp->maged = techt_inuse(tech_no);
+						}
+					}
+				}
 			t_timeout = rn1(1000,500);
 	    	break;
 	    case T_LIQUID_LEAP: {

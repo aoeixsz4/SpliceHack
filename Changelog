@@ -49,6 +49,8 @@ Items
 Balance
 - Stop randomly generating penguins, since the fact that eating them makes the
   Gods angry is confusing for unspoiled players.
+- The primal roar used by cavepeople now actually ages nearby pets, as it
+  does in SLASH'EM. This significantly buffs the caveman role.
 
 Bug Fixes
 - Water elementals can be neutral deific minions agian.

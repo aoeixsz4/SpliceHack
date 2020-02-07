@@ -495,6 +495,12 @@ register struct monst *mtmp;
     if (mtmp->mwither && !rn2(5))
         mtmp->mwither = 0;
 
+    /* artificially aged monsters eventually revert */
+    if (mtmp->maged == 1 && big_to_little(monsndx(mtmp->data)))
+        newcham(mtmp, &mons[big_to_little(monsndx(mtmp->data))], FALSE, TRUE);
+    if (mtmp->maged > 0)
+        mtmp->maged -= 1;
+
     /* some monsters teleport */
     if (mtmp->mflee && !rn2(40) && teleporter(mtmp) && !mtmp->iswiz
         && !level.flags.noteleport) {

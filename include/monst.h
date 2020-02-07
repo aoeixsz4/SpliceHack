@@ -176,6 +176,7 @@ struct monst {
 
     int meating;           /* monster is eating timeout */
     int mfading;           /* monster is fading away timeout */
+    int maged;             /* monster reverting to original form */
     uint64_t mtechs_active;/* monster techs currently active */
     uint64_t mtechs;       /* monster tech list */
     struct mextra *mextra; /* point to mextra struct */
