@@ -647,6 +647,14 @@ struct monst *mtmp;
 	case PM_HOBBIT:
 		m_learn_tech(mtmp, T_BLINK);
 		break;
+	case PM_CAVEMAN:
+	case PM_CAVEWOMAN:
+	case PM_CAVEPERSON:
+	case PM_NEANDERTHAL:
+	case PM_SHAMAN_KARNOV:
+	case PM_CHROMATIC_DRAGON:
+		m_learn_tech(mtmp, T_PRIMAL_ROAR);
+		break;
 	case PM_WIZARD_OF_YENDOR:
 		/* The Wizard of Yendor automatically knows all techniques
 		   known by the player. A player that learns many strong
@@ -682,7 +690,9 @@ struct monst *mtmp;
 int tech_no;
 {
 	int take_turn = 0;
+	int i, j;
 	boolean cansee = canseemon(mtmp);
+	struct monst *target;
 
 	switch(tech_no) {
 		case T_VANISH:
@@ -736,6 +746,26 @@ int tech_no;
 				pline(Deaf ? "%s screams in fury!" : "%s screams \"KIIILLL!\"", Monnam(mtmp));
 			else
 				You_hear("someone screaming, \"KIIILLL!\"");
+			break;
+		case T_PRIMAL_ROAR:
+			if (cansee)
+				pline("%s lets out a bloodcurdling roar!", Monnam(mtmp));
+			else if (!Deaf)
+				You_hear("a bloodcurdling roar!");
+	    	aggravate();
+	    	for(i = -5; i <= 5; i++) for(j = -5; j <= 5; j++)
+				if(isok(mtmp->mx+i, mtmp->my+j) && (target = m_at(mtmp->mx+i, mtmp->my+j))) {
+					if (!target->mpeaceful && !target->mtame) {
+						struct permonst *ptr = target->data;
+						int type = little_to_big(monsndx(ptr));
+						if (type && type != monsndx(ptr)) {
+							ptr = &mons[type];
+							newcham(target, ptr, FALSE, TRUE);
+							target->maged = d(2,6) + mtmp->m_lev + 2;
+						}
+					}
+				}
+	    	break;
 		default:
 			impossible ("monster attempting invalid tech: %d", tech_no);
 			break;
@@ -809,6 +839,7 @@ struct monst *mtmp;
 					pline("%s calms down a little.", Monnam(mtmp));
 				}
 				break;
+			case T_PRIMAL_ROAR:
 			case T_VANISH:
 			case T_BLINK:
 				mon_adjust_speed(mtmp, -4, (struct obj *) 0);
