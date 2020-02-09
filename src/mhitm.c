@@ -419,8 +419,8 @@ register struct monst *magr, *mdef;
             /* KMH -- don't accumulate to-hit bonuses */
             if (otmp)
                 tmp -= hitval(otmp, mdef);
-            if (mtech_active(magr, T_KIII))
-                tmp += 4;
+            if (mtech_active(magr, T_KIII)) tmp += 4;
+            if (mtech_active(magr, T_BERSERK)) tmp += 4;
             if ((is_displaced(magr->data) || has_displacement(magr))
                   && !rn2(4)) {
                 pline("%s attacks the displaced image of %s.",
@@ -1058,8 +1058,8 @@ register struct attack *mattk;
         else
             dmgwep = zeroobj;
 
-        if (mtech_active(magr, T_KIII))
-            tmp *= 2;
+        if (mtech_active(magr, T_KIII)) tmp *= 2;
+        if (mtech_active(magr, T_BERSERK)) tmp += 4;
 
         if (shade_miss(magr, mdef, &dmgwep, FALSE, TRUE)) {
             tmp = 0;

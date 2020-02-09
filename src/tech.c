@@ -623,9 +623,32 @@ struct monst *mtmp;
 		m_learn_tech(mtmp, T_FLURRY);
 	} else if (is_gnome(mdat)) {
 		m_learn_tech(mtmp, T_VANISH);
+	} else if (is_gnome(mdat) && mtmp->m_lev >= 7) {
+		m_learn_tech(mtmp, T_TINKER);
 	}
 
+	if (is_were(mdat))
+		m_learn_tech(mtmp, T_BERSERK);
+
 	switch(pm) {
+	case PM_DRAGONMASTER:
+		m_learn_tech(mtmp, T_DRAGON_BLITZ);
+		m_learn_tech(mtmp, T_DRAGON_CALL);
+		break;
+	case PM_CARTOMANCER:
+	case PM_LORD_OF_THE_CARDS:
+	case PM_DAL_ZETHIRE:
+		m_learn_tech(mtmp, T_CARD_COMBO);
+		break;
+	case PM_VALKYRIE:
+	case PM_WARRIOR:
+	case PM_NORN:
+		m_learn_tech(mtmp, T_PRACTICE);
+		break;
+	case PM_BARBARIAN:
+	case PM_CHIEFTAIN:
+		m_learn_tech(mtmp, T_BERSERK);
+		break;
 	case PM_LORD_SATO:
 	case PM_ASHIKAGA_TAKAUJI:
 	case PM_ROSHI:
@@ -664,6 +687,7 @@ struct monst *mtmp;
 			if (tech_known(i)) 
 				m_learn_tech(mtmp, i);
 		}
+		m_learn_tech(mtmp, T_REINFORCE);
 	}
 }
 
@@ -766,6 +790,99 @@ int tech_no;
 					}
 				}
 	    	break;
+		case T_BERSERK:
+			if (cansee)
+				pline("%s flies into a berserk rage!", Monnam(mtmp));
+			else if (!Deaf && Hallucination)
+				verbalize("Greetings, friend! Just wanted let you know that I am berserking now!");
+			mon_adjust_speed(mtmp, 4, (struct obj *) 0);
+			break;
+		case T_CARD_COMBO:
+			if (cansee)
+				pline("%s rapidly shuffles a deck of cards!", Monnam(mtmp));
+			for (i = 0; i <= 5; i++)
+				card_response(mtmp);
+			break;
+		case T_DRAGON_CALL:
+			makemon(&mons[rn2(PM_BABY_YELLOW_DRAGON - PM_BABY_GRAY_DRAGON)], 
+				0, 0, NO_MM_FLAGS);
+			pline("%s lets loose a mighty draconic roar!", Monnam(mtmp));
+			for (target = fmon; target; target = target->nmon) {
+				if (DEADMONSTER(target) || !is_dragon(target->data) 
+					|| target->mpeaceful || target->monmount)
+						continue;
+				if (target->mtrapped) {
+					target->mtrapped = 0;
+					fill_pit(target->mx, target->my);
+				}
+				if (target->m_ap_type)
+					seemimic(target);
+				if (!mnearto(target, mtmp->mx, mtmp->my, FALSE))
+					(void) rloc(target, TRUE);
+				target->mundetected = 0; /* reveal non-mimic hider */
+			}
+			break;
+		case T_DRAGON_BLITZ:
+			if (!Deaf)
+				verbalize("Dragons one and all! Destroy my foes!");
+			for (target = fmon; target; target = target->nmon) {
+				if (DEADMONSTER(target) || !is_dragon(target->data) || target->mtame)
+						continue;
+				else {
+					if (canseemon(target)) {
+						pline("%s becomes a blur!", Monnam(target));
+					}
+					target->movement += (75 + (2 * target->m_lev));
+				}
+
+			}
+			break;
+		case T_CROWN_LAW:
+		case T_CROWN_CHAOS:
+		case T_CROWN_NEU:
+			/* Only the player should be able to use a crowning technique, since all of
+			   them are very powerful and destructive. Monsters just summon an emissary
+			   instead. */
+			pline("%s calls forth an emissary of %s!", Monnam(mtmp), 
+					is_demon(mtmp->data) ? "Moloch" : halu_gname(mon_aligntyp(mtmp)));
+			summon_minion(mon_aligntyp(mtmp), TRUE);
+			break;
+		/* Techniques after this point exist largely for the sake of flavor / YAFMs. They
+		   are either inapplicable for monsters, or (in the case of techs such as tinker)
+		   would be too unbalancing in the hands of monsters. */
+		case T_PRACTICE:
+			if (cansee) {
+				if (Hallucination)
+					pline("%s dabs!", Monnam(mtmp)); /* This isn't dating ourselves at all... */
+				else if (!MON_WEP(mtmp))
+					pline("%s strikes a fighting pose.", Monnam(mtmp));
+				else
+					pline("%s performs a series of complex weapon drills.", Monnam(mtmp));
+			}
+			break;
+		case T_TINKER:
+			if (cansee)
+				pline("%s tinkers with something.", Monnam(mtmp));
+			break;
+		case T_REINFORCE:
+			if (cansee)
+				pline("%s takes out a spellbook, glances at it, then casts it away.", Monnam(mtmp));
+			break;
+		case T_RESEARCH:
+			if (cansee)
+				pline("%s jots down a few notes about the dungeon.", Monnam(mtmp));
+			break;
+		case T_BOOTY:
+			if (!Deaf)
+				verbalize("Arrrr, matey! It be time to kick some booty!");
+			else if (!Deaf && Hallucination)
+				verbalize("Yar har fiddle dee dee, being a pirate is alright with me!"); /* Lazytown */
+			break;
+		case T_POWER_SURGE:
+		case T_BLESSING:
+		case T_CARD_CAPTURE:
+		case T_DRAW_BLOOD:
+			break;
 		default:
 			impossible ("monster attempting invalid tech: %d", tech_no);
 			break;
@@ -839,13 +956,20 @@ struct monst *mtmp;
 					pline("%s calms down a little.", Monnam(mtmp));
 				}
 				break;
+			case T_BERSERK:
+				mon_adjust_speed(mtmp, -4, (struct obj *) 0);
+				if (canseemon(mtmp)) {
+					pline("%s runs out of steam.", Monnam(mtmp));
+				}
+				break;
 			case T_PRIMAL_ROAR:
 			case T_VANISH:
 			case T_BLINK:
 				mon_adjust_speed(mtmp, -4, (struct obj *) 0);
 				break;
 			default:
-				impossible ("just timed out invalid tech: %d", tech_no);
+				/* impossible ("just timed out invalid tech: %d", tech_no); */
+				break;
 		}
 	}
 }
