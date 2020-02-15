@@ -18,7 +18,7 @@ static void FDECL(hurtmon, (struct monst *,int));
 static int FDECL(mon_to_zombie, (int));
 STATIC_PTR int NDECL(tinker);
 STATIC_PTR int NDECL(draw_energy);
-static const struct innate_tech * NDECL(role_tech);
+static const struct innate_tech * FDECL(role_tech, (int));
 static const struct innate_tech * NDECL(race_tech);
 static int NDECL(doblitz);
 static int NDECL(blitz_chi_strike);
@@ -352,7 +352,7 @@ learntech(tech, mask, tlevel)
 	    if (tech_list[i].t_intrinsic & FROMOUTSIDE)
 		tlevel = tech_list[i].t_intrinsic & OUTSIDE_LEVEL;
 	    if (tech_list[i].t_intrinsic & FROMEXPER) {
-		for(tp = role_tech(); tp->tech_id; tp++)
+		for(tp = role_tech(Role_switch); tp->tech_id; tp++)
 		    if (tp->tech_id == tech)
 			break;
 		if (!tp->tech_id)
@@ -630,29 +630,28 @@ struct monst *mtmp;
 	if (is_were(mdat))
 		m_learn_tech(mtmp, T_BERSERK);
 
+	if (is_vampire(mdat) && (is_prince(mdat) || is_lord(mdat)))
+		m_learn_tech(mtmp, T_DAZZLE);
+
+	if (is_mplayer(mdat) || mdat->msound == MS_LEADER || mdat->msound == MS_GUARDIAN) {
+		const struct innate_tech *tech = role_tech(monsndx(mdat));
+		for(; tech->tech_id; tech++) {
+			if (mtmp->m_lev >= tech->ulevel) {
+				m_learn_tech(mtmp, tech->tech_id);
+			}
+		}
+	}
+
+
+	/* techniques for specific monsters. */
 	switch(pm) {
-	case PM_DRAGONMASTER:
-		m_learn_tech(mtmp, T_DRAGON_BLITZ);
-		m_learn_tech(mtmp, T_DRAGON_CALL);
-		break;
-	case PM_CARTOMANCER:
-	case PM_LORD_OF_THE_CARDS:
 	case PM_DAL_ZETHIRE:
 		m_learn_tech(mtmp, T_CARD_COMBO);
 		break;
-	case PM_VALKYRIE:
-	case PM_WARRIOR:
 	case PM_NORN:
 		m_learn_tech(mtmp, T_PRACTICE);
 		break;
-	case PM_BARBARIAN:
-	case PM_CHIEFTAIN:
-		m_learn_tech(mtmp, T_BERSERK);
-		break;
-	case PM_LORD_SATO:
 	case PM_ASHIKAGA_TAKAUJI:
-	case PM_ROSHI:
-	case PM_SAMURAI:
 		m_learn_tech(mtmp, T_KIII);
 		break;
 	case PM_MASTER_KAEN:
@@ -661,8 +660,6 @@ struct monst *mtmp;
 		/*FALLTHRU*/
 	case PM_MARTIAL_ARTIST:
 	case PM_MARTIAL_MASTER:
-	case PM_ABBOT:
-	case PM_MONK:
 		m_learn_tech(mtmp, T_WARD_FIRE);
 		m_learn_tech(mtmp, T_WARD_COLD);
 		m_learn_tech(mtmp, T_WARD_ELEC);
@@ -670,30 +667,41 @@ struct monst *mtmp;
 	case PM_HOBBIT:
 		m_learn_tech(mtmp, T_BLINK);
 		break;
-	case PM_CAVEMAN:
-	case PM_CAVEWOMAN:
-	case PM_CAVEPERSON:
-	case PM_NEANDERTHAL:
-	case PM_SHAMAN_KARNOV:
 	case PM_CHROMATIC_DRAGON:
 		m_learn_tech(mtmp, T_PRIMAL_ROAR);
 		break;
+	case PM_DOPPELGANGER:
+	case PM_SANDESTIN:
+		/* Shapeshifters know several random techniques. This is
+		   probably not overly unbalanced, since they're only 
+		   encountered in Gehennom. */
+		for (i = 0; i < rnd(4); i++) {
+			m_learn_tech(mtmp, rnd(MAXTECH - 1));
+		}
+		break;
+	case PM_ALEAX:
 	case PM_WIZARD_OF_YENDOR:
 		/* The Wizard of Yendor automatically knows all techniques
 		   known by the player. A player that learns many strong
 		   techniques will have an easier time reaching the Amulet,
-		   but a significantly harder ascension run. */
+		   but a significantly harder ascension run. Aleaxes also
+		   know all techniques the player knows, simply because they
+		   are a perfect imitation of the player. */
 		for (i = 0; i < MAXTECH; i++) {
 			if (tech_known(i)) 
 				m_learn_tech(mtmp, i);
 		}
-		m_learn_tech(mtmp, T_REINFORCE);
+		if (pm == PM_WIZARD_OF_YENDOR) {
+			m_learn_tech(mtmp, T_REINFORCE);
+		}
+		break;
 	}
 }
 
 int
-m_choose_tech(mtmp)
+m_choose_tech(mtmp, target)
 struct monst *mtmp;
+struct monst *target;
 {
 	int tech_no = rn2(MAXTECH);
 
@@ -703,20 +711,22 @@ struct monst *mtmp;
         return 0;
 
 	if (mtech_available(mtmp, tech_no)) {
-		return mtecheffects(mtmp, tech_no);
+		return mtecheffects(mtmp, target, tech_no);
 	}
 	return 0;
 }
 
 int
-mtecheffects(mtmp, tech_no)
+mtecheffects(mtmp, target, tech_no)
 struct monst *mtmp;
+struct monst *target;
 int tech_no;
 {
 	int take_turn = 0;
-	int i, j;
+	int i, j, oldhp;
+	struct obj* otmp;
 	boolean cansee = canseemon(mtmp);
-	struct monst *target;
+	boolean youtarget = (target == &youmonst);
 
 	switch(tech_no) {
 		case T_VANISH:
@@ -738,6 +748,101 @@ int tech_no;
 			if (cansee) {
 				pline("The hands of %s become blurs as %s reaches for %s quiver!", 
 					mon_nam(mtmp), mhe(mtmp), mhis(mtmp));
+			}
+			break;
+		case T_CRIT_STRIKE:
+			if (unsolid(target->data) || noncorporeal(target->data)) {
+				if (cansee) pline("%s performs a flashy twirl!", Monnam(mtmp));
+				return 0;
+			}
+
+			if (youtarget) {
+				oldhp = u.uhp;
+				if (!mattacku(mtmp) && u.uhp < oldhp) {
+					i = (u.uhp / 2) + mtmp->m_lev;
+					if (is_golem(target->data) || !humanoid(target->data)
+						|| target->data->mlet == S_CENTAUR)
+						i = i / 2;
+					pline("%s strikes your vitals!", Monnam(mtmp));
+					losehp(i, "a strike to the vitals", KILLED_BY);
+				}
+			} else {
+				oldhp = mtmp->mhp;
+				if ((mattackm(mtmp, target) & MM_HIT) && target 
+					&& !DEADMONSTER(target) && target->mhp < oldhp) {
+					i = (target->mhp / 2) + mtmp->m_lev;
+					if (is_golem(target->data) || !humanoid(target->data)
+						|| target->data->mlet == S_CENTAUR)
+						i = i / 2;
+					if (cansee) pline("%s strikes %s vitals!", Monnam(mtmp), mhis(mtmp));
+					hurtmon(mtmp, i);
+				}
+			}
+			break;
+		case T_CUTTHROAT:
+			if (!MON_WEP(mtmp) || !is_blade(MON_WEP(mtmp))
+				|| !has_head(target->data)) {
+				return 0;
+			}
+			if (youtarget) {
+				oldhp = u.uhp;
+				if (!mattacku(mtmp) && u.uhp < oldhp) {
+					i = (u.uhp / 2) + mtmp->m_lev;
+					pline("%s inflicts a deadly wound!", Monnam(mtmp));
+					losehp(i, "a blade to the throat", KILLED_BY);
+				}
+			} else {
+				oldhp = mtmp->mhp;
+				if ((mattackm(mtmp, target) & MM_HIT) && target 
+					&& !DEADMONSTER(target) && target->mhp < oldhp) {
+					i = (target->mhp / 2) + mtmp->m_lev;
+					if (cansee && i < oldhp) pline("%s hurts %s badly!", Monnam(mtmp), mon_nam(mtmp));
+					else if (cansee) pline("%s slits %s throat!", Monnam(mtmp), mhis(target));
+					hurtmon(mtmp, i);
+				}
+			}
+			break;
+		case T_DAZZLE:
+	    	if ((youtarget && Blind) || !mtmp->mcansee || !target->mcansee) {
+	    		return 0;
+	    	}
+			if (youtarget) {
+				pline("%s stares at you.", Monnam(mtmp));
+				if (!haseyes(youmonst.data)) {
+					pline("...but your lack of eyes deflects %s stare.", mhis(mtmp));
+					break;
+				}
+				if (!Free_action && ((rn2(6) + rn2(6) + (mtmp->m_lev - u.ulevel)) > 10)) {
+					pline("%s dazzles you!", Monnam(mtmp));
+					nomul(rnd(10));
+					multi_reason = "dazzled";
+					nomovemsg = You_can_move_again;
+				} else {
+					pline("You breaks the stare!");
+				}
+			} else {
+				if (cansee) pline("%s stares at %s.", Monnam(mtmp), mon_nam(mtmp));
+				if (!haseyes(target->data)) {
+					if (cansee) pline("..but %s has no eyes!", mon_nam(mtmp));
+					break;
+				}
+				mtmp->mcanmove = 0;
+				mtmp->mfrozen = rnd(10);
+			}
+	    	break;
+		case T_CARD_CAPTURE:
+			if (youtarget && !Deaf) {
+				pline("%s challenges you to a %s.", Monnam(mtmp), Hallucination ? "children\'s card game" : "duel");
+				break;
+			}
+			pline("%s gestures at %s.", Monnam(mtmp), mon_nam(target));
+			if (tamedog(target, (struct obj *) 0) == TRUE) {
+				pline("%s transforms into a spell card!", Monnam(mtmp));
+				otmp = mksobj_at(SCR_CREATE_MONSTER, mtmp->mx, mtmp->my, FALSE, FALSE);
+				otmp->corpsenm = monsndx(mtmp->data);
+				mongone(mtmp);
+			} else {
+				pline("%s resists!", Monnam(target));
 			}
 			break;
 		case T_BLINK:
@@ -797,6 +902,16 @@ int tech_no;
 				verbalize("Greetings, friend! Just wanted let you know that I am berserking now!");
 			mon_adjust_speed(mtmp, 4, (struct obj *) 0);
 			break;
+		case T_HEAL_HANDS:
+			if (mtmp->mhp < mtmp->mhpmax) {
+				if (cansee) pline("A warm glow emanates from %s!", mon_nam(mtmp));
+				mtmp->mhp += mtmp->m_lev * 4;
+				if (mtmp->mhp > mtmp->mhpmax)
+					mtmp->mhp = mtmp->mhpmax;
+			} else {
+				return 0;
+			}
+			break;
 		case T_CARD_COMBO:
 			if (cansee)
 				pline("%s rapidly shuffles a deck of cards!", Monnam(mtmp));
@@ -824,7 +939,9 @@ int tech_no;
 			break;
 		case T_DRAGON_BLITZ:
 			if (!Deaf)
-				verbalize("Dragons one and all! Destroy my foes!");
+				verbalize(Hallucination 
+							? "Let\'s all go to Dragon Land!" 
+							: "Dragons one and all! Destroy my foes!");
 			for (target = fmon; target; target = target->nmon) {
 				if (DEADMONSTER(target) || !is_dragon(target->data) || target->mtame)
 						continue;
@@ -880,8 +997,8 @@ int tech_no;
 			break;
 		case T_POWER_SURGE:
 		case T_BLESSING:
-		case T_CARD_CAPTURE:
 		case T_DRAW_BLOOD:
+		case T_PULL_UNDER:
 			break;
 		default:
 			impossible ("monster attempting invalid tech: %d", tech_no);
@@ -2254,9 +2371,10 @@ int tmp;
 }
 
 static const struct 	innate_tech *
-role_tech()
+role_tech(role)
+int role;
 {
-	switch (Role_switch) {
+	switch (role) {
 		case PM_ARCHEOLOGIST:	return (arc_tech);
 		case PM_BARBARIAN:	return (bar_tech);
 		case PM_CARTOMANCER: return (car_tech);
@@ -2308,7 +2426,7 @@ adjtech(oldlevel,newlevel)
 int oldlevel, newlevel;
 {
 	const struct   innate_tech
-		*tech = role_tech(), *rtech = race_tech();
+		*tech = role_tech(Role_switch), *rtech = race_tech();
 	long mask = FROMEXPER;
 
 	while (tech || rtech) {

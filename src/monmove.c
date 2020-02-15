@@ -561,8 +561,8 @@ register struct monst *mtmp;
     } else if (find_misc(mtmp)) {
         if (use_misc(mtmp) != 0)
             return 1;
-    } else
-        m_choose_tech(mtmp);
+    } else if (monnear(mtmp, u.ux, u.uy))
+        m_choose_tech(mtmp, &youmonst);
         /* TODO: Change location of call */
 
     /* Demonic Blackmail! */
