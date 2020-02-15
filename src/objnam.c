@@ -4341,7 +4341,7 @@ struct obj *no_wish;
         return otmp;
     }
 
-#if 0 /* deferred until we see the balance implications of obj materials */
+#if 1 /* deferred until we see the balance implications of obj materials */
     if (material > 0 && !otmp->oartifact
         && (wizard || valid_obj_material(otmp, material))) {
 #else

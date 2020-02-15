@@ -51,6 +51,9 @@ Balance
   Gods angry is confusing for unspoiled players.
 - The primal roar used by cavepeople now actually ages nearby pets, as it
   does in SLASH'EM. This significantly buffs the caveman role.
+- Objects of specific materials can now be wished for, e.g. "golden saber." This
+  change was made to offset the increase in difficulty caused by monster
+  techniques.
 
 Bug Fixes
 - Water elementals can be neutral deific minions agian.
