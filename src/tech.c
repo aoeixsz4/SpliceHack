@@ -91,6 +91,7 @@ STATIC_OVL NEARDATA const char *tech_names[] = {
 	"card capture",
 	"whirlwind",
 	"clobber",
+	"exorcism",
 	"court of blades",
 	"perfect balance",
 	"end of the world"
@@ -187,6 +188,8 @@ static const struct innate_tech
 	dop_tech[] = { {   1, T_LIQUID_LEAP, 1},
 		       {   0, 0, 0} },
 	#endif
+	ang_tech[] = { {   1, T_EXORCISM, 1},
+		       {   0, 0, 0} },
 	dwa_tech[] = { {   1, T_RAGE, 1},
 		       {   0, 0, 0} },
 	#if 0
@@ -2204,6 +2207,36 @@ int tech_no;
 				t_timeout = rn1(1000, 500);
 			}
 			break;
+		case T_EXORCISM:
+			if (!getdir((char *)0)) return(0);
+			if (In_hell(&u.uz)) {
+				You("have no power here.");
+				return 0;
+			}
+			if (!u.dx && !u.dy) {
+				if (!is_demon(youmonst.data))
+					You("feel free of demonic influences.");
+				else if (yn("Really exorcise yourself?") == 'y') {
+					You("exorcise yourself!");
+					losehp(u.uen, "self-inflicted exorcism", KILLED_BY);
+				} else
+					return(0);
+			} else {
+				mtmp = m_at(u.ux + u.dx, u.uy + u.dy);
+				if (!mtmp || !(is_demon(mtmp->data))) {
+					pline("There can be no exorcism without a demon!");
+					return (0);
+				}
+				pline("%s lets out a demonic scream as you cast %s into Gehennom!", Monnam(mtmp), mhe(mtmp));
+				d_level flev;
+				get_level(&flev, 1 + rn2(depth(&u.uz)));
+				migrate_to_level(mtmp, rn1(40, 4), MIGR_RANDOM,
+									(coord *) 0);
+			}
+			u.uen = 0;
+			losehp(d(3,6), "exorcism-related stress", KILLED_BY);
+			t_timeout = rn1(2000, 1000);
+			break;
 		case T_CROWN_LAW:
 			You("call upon the seven heavens to enact holy justice upon your enemies!");
 			for(i = 0; i < 7; i++) {
@@ -2407,6 +2440,7 @@ static const struct     innate_tech *
 race_tech()
 {
 	switch (Race_switch) {
+		case PM_MINOR_ANGEL: return (ang_tech);
 		case PM_DWARF:		return (dwa_tech);
     #if 0
 		case PM_DOPPELGANGER:	return (dop_tech);
