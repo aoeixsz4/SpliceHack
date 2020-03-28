@@ -424,10 +424,10 @@ amii_askname()
         amii_getlin("Who are you?", plnametmp);
     } while (strlen(plnametmp) == 0);
 
-    strncpy(plname, plnametmp, PL_NSIZ - 1); /* Avoid overflowing plname[] */
-    plname[PL_NSIZ - 1] = 0;
+    strncpy(g.plname, plnametmp, PL_NSIZ - 1); /* Avoid overflowing plname[] */
+    g.plname[PL_NSIZ - 1] = 0;
 
-    if (*plname == '\33') {
+    if (*g.plname == '\33') {
         clearlocks();
         exit_nhwindows(NULL);
         nh_terminate(0);
@@ -461,9 +461,9 @@ amii_player_selection()
 #if 0 /* Don't query the user ... instead give random character -jhsa */
 
 #if 0 /* OBSOLETE */
-    if( *pl_character ){
-	pl_character[ 0 ] = toupper( pl_character[ 0 ] );
-	if( index( pl_classes, pl_character[ 0 ] ) )
+    if( *g.pl_character ){
+	g.pl_character[ 0 ] = toupper( g.pl_character[ 0 ] );
+	if( index( pl_classes, g.pl_character[ 0 ] ) )
 	    return;
     }
 #endif
@@ -517,19 +517,19 @@ amii_player_selection()
 	    case VANILLAKEY:
 		if( index( pl_classes, toupper( code ) ) )
 		{
-		    pl_character[0] = toupper( code );
+		    g.pl_character[0] = toupper( code );
 		    aredone = 1;
 		}
 		else if( code == ' ' || code == '\n' || code == '\r' )
 		{
 		    flags.initrole = randrole(FALSE);
 #if 0 /* OBSOLETE */
-		    strcpy( pl_character, roles[ rnd( 11 ) ] );
+		    strcpy( g.pl_character, roles[ rnd( 11 ) ] );
 #endif
 		    aredone = 1;
 		    amii_clear_nhwindow( WIN_BASE );
 		    CloseShWindow( cwin );
-		    RandomWindow( pl_character );
+		    RandomWindow( g.pl_character );
 		    return;
 		}
 		else if( code == 'q' || code == 'Q' )
@@ -549,15 +549,15 @@ amii_player_selection()
 		case 1: /* Random Character */
 		    flags.initrole = randrole(FALSE);
 #if 0 /* OBSOLETE */
-		    strcpy( pl_character, roles[ rnd( 11 ) ] );
+		    strcpy( g.pl_character, roles[ rnd( 11 ) ] );
 #endif
 		    amii_clear_nhwindow( WIN_BASE );
 		    CloseShWindow( cwin );
-		    RandomWindow( pl_character );
+		    RandomWindow( g.pl_character );
 		    return;
 
 		default:
-		    pl_character[0] = gd->GadgetID;
+		    g.pl_character[0] = gd->GadgetID;
 		    break;
 		}
 		aredone = 1;
@@ -767,7 +767,7 @@ amii_get_ext_cmd(void)
 #ifdef EXTMENU
     if (iflags.extmenu) {
         win = amii_create_nhwindow(NHW_MENU);
-        amii_start_menu(win);
+        amii_start_menu(win, MENU_BEHAVE_STANDARD);
         pline("#");
         amii_putstr(WIN_MESSAGE, -1, " ");
 
@@ -776,7 +776,7 @@ amii_get_ext_cmd(void)
             sprintf(buf, "%-10s - %s ", extcmdlist[i].ef_txt,
                     extcmdlist[i].ef_desc);
             amii_add_menu(win, NO_GLYPH, &id, extcmdlist[i].ef_txt[0], 0, 0,
-                          buf, MENU_UNSELECTED);
+                          buf, MENU_ITEMFLAGS_NONE);
         }
 
         amii_end_menu(win, (char *) 0);
@@ -830,14 +830,14 @@ amii_get_ext_cmd(void)
             }
 
             win = amii_create_nhwindow(NHW_MENU);
-            amii_start_menu(win);
+            amii_start_menu(win, MENU_BEHAVE_STANDARD);
 
             for (i = 0; extcmdlist[i].ef_txt != NULL; ++i) {
                 id.a_char = extcmdlist[i].ef_txt[0];
                 sprintf(buf, "%-10s - %s ", extcmdlist[i].ef_txt,
                         extcmdlist[i].ef_desc);
                 amii_add_menu(win, NO_GLYPH, &id, extcmdlist[i].ef_txt[0], 0,
-                              0, buf, MENU_UNSELECTED);
+                              0, buf, MENU_ITEMFLAGS_NONE);
             }
 
             amii_end_menu(win, (char *) 0);
@@ -1389,7 +1389,7 @@ amii_player_selection()
         } else {
             /* Prompt for a role */
             win = create_nhwindow(NHW_MENU);
-            start_menu(win);
+            start_menu(win, MENU_BEHAVE_STANDARD);
             any.a_void = 0; /* zero out all bits */
             for (i = 0; roles[i].name.m; i++) {
                 if (ok_role(i, flags.initrace, flags.initgend,
@@ -1413,7 +1413,7 @@ amii_player_selection()
                             Strcpy(rolenamebuf, roles[i].name.m);
                     }
                     add_menu(win, NO_GLYPH, &any, thisch, 0, ATR_NONE,
-                             an(rolenamebuf), MENU_UNSELECTED);
+                             an(rolenamebuf), MENU_ITEMFLAGS_NONE);
                     lastch = thisch;
                 }
             }
@@ -1422,10 +1422,10 @@ amii_player_selection()
             if (any.a_int == 0) /* must be non-zero */
                 any.a_int = randrole(FALSE) + 1;
             add_menu(win, NO_GLYPH, &any, '*', 0, ATR_NONE, "Random",
-                     MENU_UNSELECTED);
+                     MENU_ITEMFLAGS_NONE);
             any.a_int = i + 1; /* must be non-zero */
             add_menu(win, NO_GLYPH, &any, 'q', 0, ATR_NONE, "Quit",
-                     MENU_UNSELECTED);
+                     MENU_ITEMFLAGS_NONE);
             Sprintf(pbuf, "Pick a role for your %s", plbuf);
             end_menu(win, pbuf);
             n = select_menu(win, PICK_ONE, &selected);
@@ -1480,7 +1480,7 @@ amii_player_selection()
             /* Permit the user to pick, if there is more than one */
             if (n > 1) {
                 win = create_nhwindow(NHW_MENU);
-                start_menu(win);
+                start_menu(win, MENU_BEHAVE_STANDARD);
                 any.a_void = 0; /* zero out all bits */
                 for (i = 0; races[i].noun; i++)
                     if (ok_race(flags.initrole, i, flags.initgend,
@@ -1488,17 +1488,17 @@ amii_player_selection()
                         any.a_int = i + 1; /* must be non-zero */
                         add_menu(win, NO_GLYPH, &any, races[i].noun[0], 0,
                                  ATR_NONE, races[i].noun,
-                                 MENU_UNSELECTED);
+                                 MENU_ITEMFLAGS_NONE);
                     }
                 any.a_int = pick_race(flags.initrole, flags.initgend,
                                       flags.initalign, PICK_RANDOM) + 1;
                 if (any.a_int == 0) /* must be non-zero */
                     any.a_int = randrace(flags.initrole) + 1;
                 add_menu(win, NO_GLYPH, &any, '*', 0, ATR_NONE, "Random",
-                         MENU_UNSELECTED);
+                         MENU_ITEMFLAGS_NONE);
                 any.a_int = i + 1; /* must be non-zero */
                 add_menu(win, NO_GLYPH, &any, 'q', 0, ATR_NONE, "Quit",
-                         MENU_UNSELECTED);
+                         MENU_ITEMFLAGS_NONE);
                 Sprintf(pbuf, "Pick the race of your %s", plbuf);
                 end_menu(win, pbuf);
                 n = select_menu(win, PICK_ONE, &selected);
@@ -1553,24 +1553,24 @@ amii_player_selection()
             /* Permit the user to pick, if there is more than one */
             if (n > 1) {
                 win = create_nhwindow(NHW_MENU);
-                start_menu(win);
+                start_menu(win, MENU_BEHAVE_STANDARD);
                 any.a_void = 0; /* zero out all bits */
                 for (i = 0; i < ROLE_GENDERS; i++)
                     if (ok_gend(flags.initrole, flags.initrace, i,
                                 flags.initalign)) {
                         any.a_int = i + 1;
                         add_menu(win, NO_GLYPH, &any, genders[i].adj[0], 0,
-                                 ATR_NONE, genders[i].adj, MENU_UNSELECTED);
+                                 ATR_NONE, genders[i].adj, MENU_ITEMFLAGS_NONE);
                     }
                 any.a_int = pick_gend(flags.initrole, flags.initrace,
                                       flags.initalign, PICK_RANDOM) + 1;
                 if (any.a_int == 0) /* must be non-zero */
                     any.a_int = randgend(flags.initrole, flags.initrace) + 1;
                 add_menu(win, NO_GLYPH, &any, '*', 0, ATR_NONE, "Random",
-                         MENU_UNSELECTED);
+                         MENU_ITEMFLAGS_NONE);
                 any.a_int = i + 1; /* must be non-zero */
                 add_menu(win, NO_GLYPH, &any, 'q', 0, ATR_NONE, "Quit",
-                         MENU_UNSELECTED);
+                         MENU_ITEMFLAGS_NONE);
                 Sprintf(pbuf, "Pick the gender of your %s", plbuf);
                 end_menu(win, pbuf);
                 n = select_menu(win, PICK_ONE, &selected);
@@ -1624,24 +1624,24 @@ amii_player_selection()
             /* Permit the user to pick, if there is more than one */
             if (n > 1) {
                 win = create_nhwindow(NHW_MENU);
-                start_menu(win);
+                start_menu(win, MENU_BEHAVE_STANDARD);
                 any.a_void = 0; /* zero out all bits */
                 for (i = 0; i < ROLE_ALIGNS; i++)
                     if (ok_align(flags.initrole, flags.initrace,
                                  flags.initgend, i)) {
                         any.a_int = i + 1;
                         add_menu(win, NO_GLYPH, &any, aligns[i].adj[0], 0,
-                                 ATR_NONE, aligns[i].adj, MENU_UNSELECTED);
+                                 ATR_NONE, aligns[i].adj, MENU_ITEMFLAGS_NONE);
                     }
                 any.a_int = pick_align(flags.initrole, flags.initrace,
                                        flags.initgend, PICK_RANDOM) + 1;
                 if (any.a_int == 0) /* must be non-zero */
                     any.a_int = randalign(flags.initrole, flags.initrace) + 1;
                 add_menu(win, NO_GLYPH, &any, '*', 0, ATR_NONE, "Random",
-                         MENU_UNSELECTED);
+                         MENU_ITEMFLAGS_NONE);
                 any.a_int = i + 1; /* must be non-zero */
                 add_menu(win, NO_GLYPH, &any, 'q', 0, ATR_NONE, "Quit",
-                         MENU_UNSELECTED);
+                         MENU_ITEMFLAGS_NONE);
                 Sprintf(pbuf, "Pick the alignment of your %s", plbuf);
                 end_menu(win, pbuf);
                 n = select_menu(win, PICK_ONE, &selected);

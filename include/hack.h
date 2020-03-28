@@ -1,4 +1,4 @@
-/* NetHack 3.6	hack.h	$NHDT-Date: 1561019041 2019/06/20 08:24:01 $  $NHDT-Branch: NetHack-3.6 $:$NHDT-Revision: 1.106 $ */
+/* NetHack 3.6	hack.h	$NHDT-Date: 1580600495 2020/02/01 23:41:35 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.128 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Pasi Kallinen, 2017. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -20,6 +20,16 @@
 #define BOLT_LIM 8        /* from this distance ranged attacks will be made */
 #define MAX_CARR_CAP 1000 /* so that boulders can be heavier */
 #define DUMMY { 0 }       /* array initializer, letting [1..N-1] default */
+#define DEF_NOTHING ' '   /* default symbol for NOTHING and UNEXPLORED  */
+
+/* The UNDEFINED macros are used to initialize variables whose
+   initialized value is not relied upon.
+   UNDEFINED_VALUE: used to initialize any scalar type except pointers.
+   UNDEFINED_VALUES: used to initialize any non scalar type without pointers.
+   UNDEFINED_PTR: can be used only on pointer types. */
+#define UNDEFINED_VALUE 0
+#define UNDEFINED_VALUES { 0 }
+#define UNDEFINED_PTR NULL
 
 /* symbolic names for capacity levels */
 enum encumbrance_types {
@@ -76,16 +86,19 @@ enum dismount_types {
 #define MG_FLAG_NOOVERRIDE 0x01
 
 /* Special returns from mapglyph() */
-#define MG_CORPSE  0x00001
-#define MG_INVIS   0x00002
-#define MG_DETECT  0x00004
-#define MG_PET     0x00008
-#define MG_RIDDEN  0x00010
-#define MG_STATUE  0x00020
-#define MG_OBJPILE 0x00040  /* more than one stack of objects */
-#define MG_BW_LAVA 0x00080  /* 'black & white lava': highlight lava if it
-                            can't be distringuished from water by color */
-#define MG_STAIRS  0x00100  /* hidden stairs */
+#define MG_CORPSE  0x0001
+#define MG_INVIS   0x0002
+#define MG_DETECT  0x0004
+#define MG_PET     0x0008
+#define MG_RIDDEN  0x0010
+#define MG_STATUE  0x0020
+#define MG_OBJPILE 0x0040  /* more than one stack of objects */
+#define MG_BW_LAVA 0x0080  /* 'black & white lava': highlight lava if it
+                              can't be distringuished from water by color */
+#define MG_STAIRS  0x0100  /* hidden stairs */
+#define MG_BW_ICE  0x0200  /* similar for ice vs floor */
+#define MG_NOTHING 0x0400  /* char represents GLYPH_NOTHING */
+#define MG_UNEXPL  0x0800  /* char represents GLYPH_UNEXPLORED */
 
 /* sellobj_state() states */
 #define SELL_NORMAL (0)
@@ -165,6 +178,27 @@ typedef struct strbuf {
     char   buf[256];
 } strbuf_t;
 
+/* str_or_len from sp_lev.h */
+typedef union str_or_len {
+    char *str;
+    int len;
+} Str_or_Len;
+
+/* values for rtype are defined in dungeon.h */
+/* lev_region from sp_lev.h */
+typedef struct {
+    struct {
+        xchar x1, y1, x2, y2;
+    } inarea;
+    struct {
+        xchar x1, y1, x2, y2;
+    } delarea;
+    boolean in_islev, del_islev;
+    xchar rtype, padding;
+    Str_or_Len rname;
+} lev_region;
+
+
 #include "align.h"
 #include "dungeon.h"
 #include "monsym.h"
@@ -173,10 +207,21 @@ typedef struct strbuf {
 #include "youprop.h"
 #include "wintype.h"
 #include "context.h"
+#include "rm.h"
+#include "botl.h"
+
+/* Symbol offsets */
+#define SYM_OFF_P (0)
+#define SYM_OFF_O (SYM_OFF_P + MAXPCHARS)   /* MAXPCHARS from rm.h */
+#define SYM_OFF_M (SYM_OFF_O + MAXOCLASSES) /* MAXOCLASSES from objclass.h */
+#define SYM_OFF_W (SYM_OFF_M + MAXMCLASSES) /* MAXMCLASSES from monsym.h*/
+#define SYM_OFF_X (SYM_OFF_W + WARNCOUNT)
+#define SYM_MAX (SYM_OFF_X + MAXOTHER)
+
+#include "rect.h"
+#include "region.h"
 #include "decl.h"
 #include "timeout.h"
-
-NEARDATA extern coord bhitpos; /* place where throw or zap hits or stops */
 
 /* types of calls to bhit() */
 enum bhit_call_types {
@@ -197,6 +242,13 @@ enum hmon_atkmode_types {
     HMON_DRAGGED = 4  /* attached iron ball, pulled into mon */
 };
 
+enum saveformats {
+    invalid = 0,
+    historical = 1,     /* entire struct, binary, as-is */
+    lendian = 2,        /* each field, binary, little-endian */
+    ascii = 3           /* each field, ascii text (just proof of concept) */
+};
+
 /* sortloot() return type; needed before extern.h */
 struct sortloot_item {
     struct obj *obj;
@@ -210,29 +262,18 @@ struct sortloot_item {
 typedef struct sortloot_item Loot;
 
 #define MATCH_WARN_OF_MON(mon)                                               \
-    (Warn_of_mon && ((context.warntype.obj                                   \
-                      && (context.warntype.obj & (mon)->data->mhflags))      \
-                     || (context.warntype.polyd                              \
-                         && (context.warntype.polyd & (mon)->data->mhflags)) \
-                     || (context.warntype.species                            \
-                         && (context.warntype.species == (mon)->data))))
+    (Warn_of_mon && ((g.context.warntype.obj                                   \
+                      && (g.context.warntype.obj & (mon)->data->mhflags))      \
+                     || (g.context.warntype.polyd                              \
+                         && (g.context.warntype.polyd & (mon)->data->mhflags)) \
+                     || (g.context.warntype.species                            \
+                         && (g.context.warntype.species == (mon)->data))))
 
 #include "trap.h"
 #include "flag.h"
-#include "rm.h"
 #include "vision.h"
 #include "display.h"
 #include "engrave.h"
-#include "rect.h"
-#include "region.h"
-
-/* Symbol offsets */
-#define SYM_OFF_P (0)
-#define SYM_OFF_O (SYM_OFF_P + MAXPCHARS)
-#define SYM_OFF_M (SYM_OFF_O + MAXOCLASSES)
-#define SYM_OFF_W (SYM_OFF_M + MAXMCLASSES)
-#define SYM_OFF_X (SYM_OFF_W + WARNCOUNT)
-#define SYM_MAX (SYM_OFF_X + MAXOTHER)
 
 #ifdef USE_TRAMPOLI /* this doesn't belong here, but we have little choice */
 #undef NDECL
@@ -332,7 +373,7 @@ typedef struct sortloot_item Loot;
 /* Flags to control find_mid() */
 #define FM_FMON 0x01    /* search the fmon chain */
 #define FM_MIGRATE 0x02 /* search the migrating monster chain */
-#define FM_MYDOGS 0x04  /* search mydogs */
+#define FM_MYDOGS 0x04  /* search g.mydogs */
 #define FM_EVERYWHERE (FM_FMON | FM_MIGRATE | FM_MYDOGS)
 
 /* Flags to control pick_[race,role,gend,align] routines in role.c */
@@ -446,6 +487,12 @@ enum bodypart_types {
 #define RANDOM_TIN (-2)
 #define HEALTHY_TIN (-3)
 
+/* Corpse aging */
+#define TAINT_AGE (50L)        /* age when corpses go bad */
+#define TROLL_REVIVE_CHANCE 37 /* 1/37 chance for 50 turns ~ 75% chance */
+#define MOLDY_CHANCE 290       /* 1/290 chance for 200 turns ~ 50% chance */
+#define ROT_AGE (250L)         /* age when corpses rot away */
+
 /* Some misc definitions */
 #define POTION_OCCUPANT_CHANCE(n) (13 + 2 * (n))
 #define WAND_BACKFIRE_CHANCE 100
@@ -460,23 +507,25 @@ enum bodypart_types {
 #define MENU_FULL 2
 #define MENU_PARTIAL 3
 
-#define MENU_SELECTED TRUE
-#define MENU_UNSELECTED FALSE
+/* flags to control teleds() */
+#define TELEDS_NO_FLAGS   0
+#define TELEDS_ALLOW_DRAG 1
+#define TELEDS_TELEPORT   2
 
 /*
- * Option flags
- * Each higher number includes the characteristics of the numbers
- * below it.
+ * option setting restrictions
  */
-/* XXX This should be replaced with a bitmap. */
-#define SET_IN_SYS 0   /* system config file option only */
-#define SET_IN_FILE 1  /* config file option only */
-#define SET_VIA_PROG 2 /* may be set via extern program, not seen in game */
-#define DISP_IN_GAME 3 /* may be set via extern program, displayed in game \
-                          */
-#define SET_IN_GAME 4  /* may be set via extern program or set in the game */
-#define SET_IN_WIZGAME 5  /* may be set set in the game if wizmode */
-#define SET__IS_VALUE_VALID(s) ((s < SET_IN_SYS) || (s > SET_IN_WIZGAME))
+
+enum optset_restrictions {
+    set_in_sysconf = 0, /* system config file option only */
+    set_in_config  = 1, /* config file option only */
+    set_viaprog    = 2, /* may be set via extern program, not seen in game */
+    set_gameview   = 3, /* may be set via extern program, displayed in game */
+    set_in_game    = 4, /* may be set via extern program or set in the game */
+    set_wizonly    = 5, /* may be set set in the game if wizmode */
+    set_hidden     = 6  /* placeholder for prefixed entries, never show it  */
+};
+#define SET__IS_VALUE_VALID(s) ((s < set_in_sysconf) || (s > set_wizonly))
 
 #define FEATURE_NOTICE_VER(major, minor, patch)                    \
     (((unsigned long) major << 24) | ((unsigned long) minor << 16) \
@@ -515,27 +564,6 @@ enum bodypart_types {
 #define getlogin() ((char *) 0)
 #endif /* MICRO */
 
-#if defined(OVERLAY)
-#define USE_OVLx
-#define STATIC_DCL extern
-#define STATIC_OVL
-#define STATIC_VAR
-
-#else /* !OVERLAY */
-
-#define STATIC_DCL static
-#define STATIC_OVL static
-#define STATIC_VAR static
-
-#endif /* OVERLAY */
-
-/* Macro for a few items that are only static if we're not overlaid.... */
-#if defined(USE_TRAMPOLI) || defined(USE_OVLx)
-#define STATIC_PTR
-#else
-#define STATIC_PTR static
-#endif
-
 /* For those tough guys who get carried away... */
 extern int repeat_hit;
 
@@ -549,7 +577,7 @@ extern int repeat_hit;
 #define CFDECLSPEC
 #endif
 
-#define DEVTEAM_EMAIL "devteam@nethack.org"
+#define DEVTEAM_EMAIL "AntiGulp"
 #define DEVTEAM_URL "https://www.github.com/NullCGT/SpliceHack/"
 
 #endif /* HACK_H */

@@ -2,13 +2,29 @@
 
                             Version 0.7.1
 
+3.7.0
+- SpliceHack is now up to date with the development version of NetHack 3.7.0.
+- Due to the sweeping changes made by 3.7.0, many bugs are likely to have been
+  introduced. At the same time, merging 3.7.0 required a careful examination
+  of almost every file, leading to bug fixes for many unreported issues.
+- Due to the addition of vanilla's version of the flipped levels patch, more
+  levels are eligible for flipping, and less bugs should occur when exploring
+  a flipped level.
+- Splice-specific rooms and dungeon features are now supported in special levels,
+  thanks to the release of the new level coder.
+- Temporarily disabled random light status in car-loca due to lack of implementation
+  for random lighting in lua.
+- Dropped the castle and knox variants. They are not widely liked, and it seemed
+  easier just not to port them.
+- Changed the ill-fated option to illfated.
+
 Monster techniques
 - Monsters can use the same techniques available to the player.
 - The Wizard of Yendor has all the techniques that the player has.
   While techniques make the game easier, the more the player knows,
   the more dangerous the Wizard will be.
 
-Monsters
+New Monsters
 - New Monster: Thriae
   - Does not appear until the player is powerful enough to deal with them, but
     can be potentially very nasty when summoned via summon insects, such as in
@@ -27,8 +43,42 @@ Monsters
 - New Monster: Ice Elemental
   - Ice Elementals are not randomly generated. They appear only when as
     a neutral minion.
+- New Monster: Chicken
+  - Chickens originally appear in SLASH'EM, and have been tweaked slightly for
+    SpliceHack. Yes, I take chickens very seriously.
+      - All chickens are now female, can fly, and can lay eggs.
+      - Chickens now use domestic coloring, in order to distinguish them from
+        cockatrices.
+      - The chicken tile has been tweaked, so that it looks better.
+      - Chicken sounds have been fleshed out and debugged.
+      - Attacking one chicken angers all chickens within sight.
+- New Monster: Pig
+  - Domestic and omnivorous, but make for poor pets.
+  - Instantly eat all organic objects.
+  - YAFM for pulling pigs out of pits.
+- New Monster: Changeling Mummy
+- New Monster: Changeling Zombie
+  - Both relatively unremarkable, aside from being shapeshifters. They are not
+    randomly generated, and generally appear in bones files.
+- New Monster: Werephant
+  - It's a were-elephant. I'm not sorry.
+  - Unintentionally YAFM: "The werephant turns into a phant."
+- New Monster: Winter Wolf Pup
+  - Not randomly generated. Pets for Valkyries.
+- New Monster: Ulsfark
+- New Monster: Lawyer
+- New Monster: Ronin
+- New Monster: Ancient Thornswell
+- New Monster: Necromancer
+- New Monster: Dark Knight
+  - All of these monsters are currently not randomly generated, and generally only
+    encountered via polytraps.
+- New Monster: Pazuzu
+  - Demon prince, can be summoned by other demons.
+  - Always starts out as peaceful and asks the player for a bribe, unlike
+    other unique demons.
 
-Items
+New Items
 - New Item: Wand of Water
   - Wands of water do a small amount of damage and will damage armor.
     Zapping a wand of water at a monster that likes fire will deal a
@@ -46,6 +96,43 @@ Items
 - New Item: Horn of Blasting
   - Functions like a frost or fire horn, but releases sonic energy instead.
   - Examining it reveals its subclass as "theoretically tonal instrument."
+- New Item: Lute
+  - Starting musical instrument.
+  - Hard to play, but has a chance of removing confusion.
+- New Item: Bagpipes
+  - Starting musical instrument.
+  - Playing it aggravtes monsters, unless you play them well, in which case
+    it exercises charisma.
+
+New Race
+- New Race: Changeling
+  - #chat to a monster to polymorph into it. The monster's base level must be of 
+    no more than three levels higher than the player, and requires a large amount
+    of energy.
+  - Liquid leap technique.
+  - Do not passively gain hit points without a special source of regeneration,
+    unless polymorphed.
+  - Hate iron in their natural form.
+
+Roles
+- Valkyries begin the game with a pet winter wolf pup. It is very weak initially,
+  but will grow up into a powerful pet.
+- Merfolk can by valkyrie.
+
+Misc. Changes
+- Changed the name of substance warpers to transmuters.
+- Changed the name of nova foxes to vulpenfernoes.
+- Changed the name of death maggots to corpseworms.
+- Changed the name of red caps to redcaps.
+- Changed the name of earthsharks to landsharks.
+- Changed the name of bone beasts to crawling cemeteries.
+- Circe's Witchstaff only transforms monsters into pigs now.
+- Added many new demon and angel maledictions.
+- Many monsters are capable of charging at the player from a distance, allowing
+  them to cover large distances quickly.
+- Added numerous database entries. Most creatures should now have some sort
+  of entry associated.
+- Tipping your hat at a headless horseman makes him angry.
 
 Balance
 - Angels have access to the exorcism technique, which allows them to instantly
@@ -67,16 +154,46 @@ Balance
 - Only four headless horseman can appear each game.
 - Increased damage for barbed devil quills.
 - Ice devils can cause fumbling with their sting attack.
+- Astral is dark, instead of being lit. Players should have a light source by the
+  time they are ready to ascend ;)
+- Skeletal pirates can swim, making the pirate quest slightly harder.
+- Mummies can now cause the player to start withering on hit.
+- Giant mummies can clobber the player, similar to giants.
+- High Priests resist death.
+- T Rexes do not randomly spawn and are much much more deadly. They can
+  swallow players whole and easily knock them back.
+- Memory hounds make the player forget 2% of levels, as well as objects.
+- Removed altar destruction nerf temporarily.
+- Majorly buffed scrolls of web. A single scroll of web allows a player to place
+  many webs.
+- Manticores are much, much more dangerous. Instead of firing a single spike that
+  does barely any damage, they fire a volley of painful spikes at enemies.
+- Buffed giant praying mantises, giant flies, skunks, kangaroos, tasmanian devils,
+  mad alchemists, cerastes, amphisbaena, and lemurs. All should be more of a
+  challenge.
 
-Miscelaneous
-- Ported some 3.7 changes, including allowing monsters to rummage through
-  containers.
-
-Bug Fixes
+Notable Bug Fixes
 - Water elementals can be neutral deific minions agian.
 - Pets will now attack monsters that are always peaceful.
 - Shambling horror randomized stats are maintained when saving and reloading.
+  Additionally, many more types of attacks are valid for shambling horrors.
+- King of the Hill now functions correctly for pirates.
 - Decks of cards are destroyed by demon lords after playing against them.
+- Fixed enemy monks acting covetous.
+- Fixed corrupted quotes in data.base, as well as potential monster lookup
+  crashes.
+- Support birds as a preferred pet, and remove the ability to set '@' as
+  a preferred pet. Game no longer complains when preferred pet is set to 'D.'
+- Fixed One-Eyed Sam being referred to oddly on gravestones.
+- Fixed an exploit that allowed pets to follow the player into the black market.
+  Now, nothing can follow you to the black market.
+- Many small grammatical fixes for quest text.
+- Implemented a partial fix for the monster weapon switching bug.
+- Fixed some odd language with substance warpers / transmuters.
+- Fixed transmuters not updating inventory correctly.
+- Fixed demon lords being con artists, and demanding money from the player 
+  several times in a row.
+- crawling cemeteries generate randomly now.
                     
                     Version 0.7.0: Stranger Days
 

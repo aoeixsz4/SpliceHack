@@ -1,4 +1,4 @@
-/* NetHack 3.6	minion.c	$NHDT-Date: 1575245071 2019/12/02 00:04:31 $  $NHDT-Branch: NetHack-3.6 $:$NHDT-Revision: 1.44 $ */
+/* NetHack 3.6	minion.c	$NHDT-Date: 1583688543 2020/03/08 17:29:03 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.53 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2008. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -41,6 +41,8 @@ boolean spotted; /* seen|sensed vs all */
 
     for (mtmp = fmon; mtmp; mtmp = mtmp->nmon) {
         if (DEADMONSTER(mtmp))
+            continue;
+        if (mtmp->isgd && mtmp->mx == 0)
             continue;
         if (spotted && !canspotmon(mtmp))
             continue;
@@ -136,7 +138,7 @@ struct monst *mon;
      * If this daemon is unique and being re-summoned (the only way we
      * could get this far with an extinct dtype), try another.
      */
-    if (mvitals[dtype].mvflags & G_GONE) {
+    if (g.mvitals[dtype].mvflags & G_GONE) {
         dtype = ndemon(atyp);
         if (dtype == NON_PM)
             return 0;
@@ -220,13 +222,9 @@ boolean talk;
     }
     if (mon) {
         if (talk) {
-            if (!Deaf)
-                pline_The("voice of %s booms:", align_gname(alignment));
-            else
-                You_feel("%s booming voice:",
-                         s_suffix(align_gname(alignment)));
+            pline_The("voice of %s booms:", align_gname(alignment));
             verbalize("Thou shalt pay for thine indiscretion!");
-            if (canspotmon(mon))
+            if (!Blind)
                 pline("%s appears before you.", Amonnam(mon));
             mon->mstrategy &= ~STRAT_APPEARMSG;
         }
@@ -245,7 +243,7 @@ struct monst* mtmp;
 {
     struct permonst* mdat = mtmp->data;
     int mondx = monsndx(mdat);
-    if (mvitals[mondx].died > 0) {
+    if (g.mvitals[mondx].died > 0) {
         /* Never print entrance message if the player already killed it. */
         return FALSE;
     }
@@ -261,26 +259,21 @@ struct monst* mtmp;
     /* ... and then turn off any other appearance message they were going to
      * get. */
     mtmp->mstrategy &= ~STRAT_APPEARMSG;
-    if (is_dprince(mdat) || is_dlord(mdat)) {
+    if (is_dprince(mdat) || is_dlord(mdat) || is_rider(mdat)) {
         /* Assumes Juiblex is first defined demon lord */
-        com_pager(QT_DLORD_APPEARS + mondx - PM_JUIBLEX);
-        return TRUE;
-    }
-    else if (is_rider(mdat)) {
-        /* Assumes Death is first defined rider */
-        com_pager(QT_RIDER_APPEARS + mondx - PM_DEATH);
+        com_pager(noit_mon_nam(mtmp));
         return TRUE;
     }
     else if (mondx == PM_WIZARD_OF_YENDOR) {
-        com_pager(QT_WIZARD_APPEARS);
+        com_pager("Wizard_of_Yendor");
         return TRUE;
     }
     else if (mondx == PM_VLAD_THE_IMPALER) {
-        com_pager(QT_VLAD_APPEARS);
+        com_pager("Vlad_the_Impaler");
         return TRUE;
     }
     else if (mondx == PM_ENVY) {
-        com_pager(QT_ENVY_APPEARS);
+        com_pager("Envy");
         return TRUE;
     }
 #if 0 /* Deferred because currently this would hardly ever happen. */
@@ -322,7 +315,7 @@ register struct monst *mtmp;
         reset_faint(); /* if fainted - wake up */
     } else {
         stop_occupation();
-        if (multi > 0) {
+        if (g.multi > 0) {
             nomul(0);
             unmul((char *) 0);
         }
@@ -338,7 +331,7 @@ register struct monst *mtmp;
         }
         newsym(mtmp->mx, mtmp->my);
     }
-    if (youmonst.data->mlet == S_DEMON) { /* Won't blackmail their own. */
+    if (g.youmonst.data->mlet == S_DEMON) { /* Won't blackmail their own. */
         if (!Deaf)
             pline("%s says, \"Good hunting, %s.\"", Amonnam(mtmp),
               sibling_gender());
@@ -350,7 +343,7 @@ register struct monst *mtmp;
     }
 
     /* based off steal.c code */
-    for (n = 0, obj = invent; obj; obj = obj->nobj){
+    for (n = 0, obj = g.invent; obj; obj = obj->nobj){
         if ((obj->oartifact &&
             obj->oartifact != ART_STING && obj->oartifact != ART_ORCRIST
             && obj->otyp != AMULET_OF_YENDOR && obj->otyp != BELL_OF_OPENING
@@ -362,7 +355,7 @@ register struct monst *mtmp;
     }
     if (n > 1) {
         n = rnd(n);
-        for (otmp = invent; otmp; otmp = otmp->nobj)
+        for (otmp = g.invent; otmp; otmp = otmp->nobj)
             if ((otmp->oartifact || otmp->otyp == WAN_WISHING ||
                 otmp->otyp == BAG_OF_HOLDING || otmp->otyp == PLAYING_CARD_DECK ||
                 otmp->otyp == DECK_OF_FATE) && !--n)
@@ -447,12 +440,12 @@ register struct monst *mtmp;
     }
 
 
-    cash = money_cnt(invent);
+    cash = money_cnt(g.invent);
     demand =
         rn1(1000, 1000)
         + (1000 * (1 + (sgn(u.ualign.type) == sgn(mtmp->data->maligntyp))));
 
-    if (!demand || multi < 0 || cash <= 0) {/* you have no gold or can't move */
+    if (!demand || g.multi < 0 || cash <= 0) {/* you have no gold or can't move */
         mtmp->mpeaceful = 0;
         set_malign(mtmp);
         return 0;
@@ -460,27 +453,20 @@ register struct monst *mtmp;
         /* make sure that the demand is unmeetable if the monster
            has the Amulet, preventing monster from being satisfied
            and removed from the game (along with said Amulet...) */
-        /* [actually the Amulet is safe; it would be dropped when
-           mongone() gets rid of the monster; force combat anyway;
-           also make it unmeetable if the player is Deaf, to simplify
-           handling that case as player-won't-pay] */
-        if (mon_has_amulet(mtmp) || Deaf)
-            /* 125: 5*25 in case hero has maximum possible charisma */
-            demand = cash + (long) rn1(1000, 125);
+        if (mon_has_amulet(mtmp))
+            demand = cash + (long) rn1(1000, 40);
 
-        if (!Deaf)
-            pline("%s demands %ld %s for safe passage.",
-                  Amonnam(mtmp), demand, currency(demand));
-        else if (canseemon(mtmp))
-            pline("%s seems to be demanding something.", Amonnam(mtmp));
+        pline("%s demands %ld %s for safe passage.", Amonnam(mtmp), demand,
+              currency(demand));
 
         offer = 0L;
-        if (!Deaf && ((offer = bribe(mtmp)) == demand + 1 || offer == demand)) {
+        if (!Deaf) offer = bribe(mtmp);
+        if (!Deaf && (offer == demand + 1 || offer == demand)) {
             pline("%s vanishes, commenting on the cheekiness of mortals.",
                   Amonnam(mtmp));
             livelog_printf(LL_UMONST, "bribed %s with %ld %s for safe passage",
                         Amonnam(mtmp), offer, currency(offer));
-        } else if (!Deaf && ((offer = bribe(mtmp)) >= demand)) {
+        } else if (!Deaf && (offer >= demand)) {
             pline("%s vanishes, laughing about cowardly mortals.",
                   Amonnam(mtmp));
             livelog_printf(LL_UMONST, "bribed %s with %ld %s for safe passage",
@@ -508,7 +494,7 @@ struct monst *mtmp;
 {
     char buf[BUFSZ] = DUMMY;
     long offer;
-    long umoney = money_cnt(invent);
+    long umoney = money_cnt(g.invent);
 
     getlin("How much will you offer?", buf);
     if (sscanf(buf, "%ld", &offer) != 1)
@@ -529,7 +515,7 @@ struct monst *mtmp;
         You("give %s %ld %s.", mon_nam(mtmp), offer, currency(offer));
     }
     (void) money2mon(mtmp, offer);
-    context.botl = 1;
+    g.context.botl = 1;
     return offer;
 }
 
@@ -541,7 +527,7 @@ aligntyp atyp;
 
     for (tryct = !In_endgame(&u.uz) ? 20 : 0; tryct > 0; --tryct) {
         pm = rn1(PM_DEMOGORGON + 1 - PM_ORCUS, PM_ORCUS);
-        if (!(mvitals[pm].mvflags & G_GONE)
+        if (!(g.mvitals[pm].mvflags & G_GONE)
             && (atyp == A_NONE || sgn(mons[pm].maligntyp) == sgn(atyp)))
             return pm;
     }
@@ -556,7 +542,7 @@ aligntyp atyp;
 
     for (tryct = !In_endgame(&u.uz) ? 20 : 0; tryct > 0; --tryct) {
         pm = rn1(PM_YEENOGHU + 1 - PM_JUIBLEX, PM_JUIBLEX);
-        if (!(mvitals[pm].mvflags & G_GONE)
+        if (!(g.mvitals[pm].mvflags & G_GONE)
             && (atyp == A_NONE || sgn(mons[pm].maligntyp) == sgn(atyp)))
             return pm;
     }
@@ -567,7 +553,7 @@ aligntyp atyp;
 int
 llord()
 {
-    if (!(mvitals[PM_ARCHON].mvflags & G_GONE))
+    if (!(g.mvitals[PM_ARCHON].mvflags & G_GONE))
         return PM_ARCHON;
 
     return lminion(); /* approximate */
@@ -652,18 +638,12 @@ gain_guardian_angel()
     Hear_again(); /* attempt to cure any deafness now (divine
                      message will be heard even if that fails) */
     if (Conflict) {
-        if (!Deaf)
-            pline("A voice booms:");
-        else
-            You_feel("a booming voice:");
+        pline("A voice booms:");
         verbalize("Thy desire for conflict shall be fulfilled!");
         /* send in some hostile angels instead */
         lose_guardian_angel((struct monst *) 0);
     } else if (u.ualign.record > 8) { /* fervent */
-        if (!Deaf)
-            pline("A voice whispers:");
-        else
-            You_feel("a soft voice:");
+        pline("A voice whispers:");
         verbalize("Thou hast been worthy of me!");
         mm.x = u.ux;
         mm.y = u.uy;

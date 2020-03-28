@@ -1,4 +1,4 @@
-/* NetHack 3.6	read.c	$NHDT-Date: 1561485713 2019/06/25 18:01:53 $  $NHDT-Branch: NetHack-3.6 $:$NHDT-Revision: 1.172 $ */
+/* NetHack 3.6	read.c	$NHDT-Date: 1583688568 2020/03/08 17:29:28 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.190 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -8,46 +8,44 @@
 #include "hack.h"
 
 #define Your_Own_Role(mndx)  \
-    ((mndx) == urole.malenum \
-     || (urole.femalenum != NON_PM && (mndx) == urole.femalenum) \
-     || (urole.nbnum != NON_PM && (mndx) == urole.nbnum))
+    ((mndx) == g.urole.malenum \
+     || (g.urole.femalenum != NON_PM && (mndx) == g.urole.femalenum) \
+     || (g.urole.nbnum != NON_PM && (mndx) == g.urole.nbnum))
 #define Your_Own_Race(mndx)  \
-    ((mndx) == urace.malenum \
-     || (urace.femalenum != NON_PM && (mndx) == urace.femalenum))
+    ((mndx) == g.urace.malenum \
+     || (g.urace.femalenum != NON_PM && (mndx) == g.urace.femalenum))
 /* For create_critters and demonology... */
 #define MAKE_EM_NATURAL		0	/* Create monsters... */
 #define MAKE_EM_HOSTILE		1	/* Create hostile monsters... */
 #define MAKE_EM_PEACEFUL	2	/* Create peaceful monsters... */
 #define MAKE_EM_TAME		3	/* Create tamed monsters... */
 
-boolean known;
-
 static NEARDATA const char readable[] = { ALL_CLASSES, SCROLL_CLASS,
                                           SPBOOK_CLASS, 0 };
 static const char all_count[] = { ALLOW_COUNT, ALL_CLASSES, 0 };
 
-STATIC_DCL boolean FDECL(learnscrolltyp, (SHORT_P));
-STATIC_DCL char *FDECL(erode_obj_text, (struct obj *, char *));
-STATIC_DCL char *FDECL(apron_text, (struct obj *, char *buf));
-STATIC_DCL void FDECL(stripspe, (struct obj *));
-STATIC_DCL void FDECL(p_glow1, (struct obj *));
-STATIC_DCL void FDECL(p_glow2, (struct obj *, const char *));
-STATIC_DCL void FDECL(forget_single_object, (int));
-STATIC_PTR void FDECL(set_dark, (int,int,genericptr_t));
+static boolean FDECL(learnscrolltyp, (SHORT_P));
+static char *FDECL(erode_obj_text, (struct obj *, char *));
+static char *FDECL(apron_text, (struct obj *, char *buf));
+static void FDECL(stripspe, (struct obj *));
+static void FDECL(p_glow1, (struct obj *));
+static void FDECL(p_glow2, (struct obj *, const char *));
+static void FDECL(forget_single_object, (int));
+static void FDECL(set_dark, (int,int,genericptr_t));
 #if 0 /* not used */
-STATIC_DCL void FDECL(forget_objclass, (int));
+static void FDECL(forget_objclass, (int));
 #endif
-STATIC_DCL void FDECL(specified_id, (void));
-STATIC_DCL void FDECL(randomize, (int *, int));
-STATIC_DCL void FDECL(forget, (int));
-STATIC_DCL int FDECL(maybe_tame, (struct monst *, struct obj *));
-STATIC_DCL boolean FDECL(get_valid_stinking_cloud_pos, (int, int));
-STATIC_DCL boolean FDECL(is_valid_stinking_cloud_pos, (int, int, BOOLEAN_P));
-STATIC_PTR void FDECL(display_stinking_cloud_positions, (int));
-STATIC_PTR void FDECL(set_lit, (int, int, genericptr));
-STATIC_DCL void NDECL(do_class_genocide);
+static void FDECL(specified_id, (void));
+static void FDECL(randomize, (int *, int));
+static void FDECL(forget, (int));
+static int FDECL(maybe_tame, (struct monst *, struct obj *));
+static boolean FDECL(get_valid_stinking_cloud_pos, (int, int));
+static boolean FDECL(is_valid_stinking_cloud_pos, (int, int, BOOLEAN_P));
+static void FDECL(display_stinking_cloud_positions, (int));
+static void FDECL(set_lit, (int, int, genericptr));
+static void NDECL(do_class_genocide);
 
-STATIC_OVL boolean
+static boolean
 learnscrolltyp(scrolltyp)
 short scrolltyp;
 {
@@ -70,7 +68,7 @@ struct obj *sobj;
         (void) learnscrolltyp(sobj->otyp);
 }
 
-STATIC_OVL char *
+static char *
 erode_obj_text(otmp, buf)
 struct obj *otmp;
 char *buf;
@@ -181,7 +179,7 @@ char *buf;
     return erode_obj_text(tshirt, buf);
 }
 
-STATIC_OVL char *
+static char *
 apron_text(apron, buf)
 struct obj *apron;
 char *buf;
@@ -208,7 +206,7 @@ doread()
     register struct obj *scroll;
     boolean confused, nodisappear;
 
-    known = FALSE;
+    g.known = FALSE;
     if (check_capacity((char *) 0))
         return 0;
     scroll = getobj(readable, "read");
@@ -422,7 +420,7 @@ doread()
      		}
      		pline("You examine %s.", the(xname(scroll)));
     } else if(scroll->otyp != SCR_BLANK_PAPER) {
-        boolean silently = !can_chant(&youmonst);
+        boolean silently = !can_chant(&g.youmonst);
 
         /* a few scroll feedback messages describe something happening
            to the scroll itself, so avoid "it disappears" for those */
@@ -458,7 +456,7 @@ doread()
     }
     if (!seffects(scroll)) {
         if (!objects[scroll->otyp].oc_name_known) {
-            if (known)
+            if (g.known)
                 learnscroll(scroll);
             else if (!objects[scroll->otyp].oc_uname)
                 docall(scroll);
@@ -481,7 +479,7 @@ doread()
     return 1;
 }
 
-STATIC_OVL void
+static void
 stripspe(obj)
 register struct obj *obj;
 {
@@ -497,14 +495,14 @@ register struct obj *obj;
     }
 }
 
-STATIC_OVL void
+static void
 p_glow1(otmp)
 register struct obj *otmp;
 {
     pline("%s briefly.", Yobjnam2(otmp, Blind ? "vibrate" : "glow"));
 }
 
-STATIC_OVL void
+static void
 p_glow2(otmp, color)
 register struct obj *otmp;
 register const char *color;
@@ -789,7 +787,7 @@ int curse_bless;
 }
 
 /* Forget known information about this object type. */
-STATIC_OVL void
+static void
 forget_single_object(obj_id)
 int obj_id;
 {
@@ -804,7 +802,7 @@ int obj_id;
     /* clear & free object names from matching inventory items too? */
 }
 
-STATIC_PTR void
+static void
 set_dark(x,y,val)
 int x, y;
 genericptr_t val;
@@ -827,7 +825,7 @@ genericptr_t val;
             You("are surrounded by darkness!");
         }
         /* the magic douses lamps, et al, too */
-        for(otmp = invent; otmp; otmp = otmp->nobj)
+        for(otmp = g.invent; otmp; otmp = otmp->nobj)
             if (otmp->lamplit)
                 (void) snuff_lit(otmp);
     } else {
@@ -845,20 +843,20 @@ genericptr_t val;
 
 #if 0 /* here if anyone wants it.... */
 /* Forget everything known about a particular object class. */
-STATIC_OVL void
+static void
 forget_objclass(oclass)
 int oclass;
 {
     int i;
 
-    for (i = bases[oclass];
+    for (i = g.bases[oclass];
          i < NUM_OBJECTS && objects[i].oc_class == oclass; i++)
         forget_single_object(i);
 }
 #endif
 
 /* randomize the given list of numbers  0 <= i < count */
-STATIC_OVL void
+static void
 randomize(indices, count)
 int *indices;
 int count;
@@ -915,15 +913,15 @@ int howmuch;
     if (Sokoban)
         return;
 
-    known = TRUE;
+    g.known = TRUE;
     for (zx = 0; zx < COLNO; zx++)
         for (zy = 0; zy < ROWNO; zy++)
             if (howmuch & ALL_MAP || rn2(7)) {
                 /* Zonk all memory of this location. */
                 levl[zx][zy].seenv = 0;
                 levl[zx][zy].waslit = 0;
-                levl[zx][zy].glyph = cmap_to_glyph(S_stone);
-                lastseentyp[zx][zy] = STONE;
+                levl[zx][zy].glyph = GLYPH_UNEXPLORED;
+                g.lastseentyp[zx][zy] = STONE;
             }
     /* forget overview data for this level */
     forget_mapseen(ledger_no(&u.uz));
@@ -936,7 +934,7 @@ forget_traps()
     register struct trap *trap;
 
     /* forget all traps (except the one the hero is in :-) */
-    for (trap = ftrap; trap; trap = trap->ntrap)
+    for (trap = g.ftrap; trap; trap = trap->ntrap)
         if ((trap->tx != u.ux || trap->ty != u.uy) && (trap->ttyp != HOLE))
             trap->tseen = 0;
 }
@@ -972,8 +970,8 @@ int percent;
      */
     indices[0] = 0; /* lint suppression */
     for (count = 0, i = 0; i <= maxl; i++)
-        if ((level_info[i].flags & VISITED)
-            && !(level_info[i].flags & FORGOTTEN) && i != this_lev) {
+        if ((g.level_info[i].flags & VISITED)
+            && !(g.level_info[i].flags & FORGOTTEN) && i != this_lev) {
             if (ledger_to_dnum(i) == sokoban_dnum)
                 percent += 2;
             else
@@ -989,7 +987,7 @@ int percent;
         /* forget first % of randomized indices */
         count = ((count * percent) + 50) / 100;
         for (i = 0; i < count; i++) {
-            level_info[indices[i]].flags |= FORGOTTEN;
+            g.level_info[indices[i]].flags |= FORGOTTEN;
             forget_mapseen(indices[i]);
         }
     }
@@ -999,14 +997,12 @@ int percent;
  * Forget some things (e.g. after reading a scroll of amnesia).  When called,
  * the following are always forgotten:
  *      - felt ball & chain
- *      - traps
- *      - part (6 out of 7) of the map
+ *      - skill training
  *
  * Other things are subject to flags:
- *      howmuch & ALL_MAP       = forget whole map
  *      howmuch & ALL_SPELLS    = forget all spells
  */
-STATIC_OVL void
+static void
 forget(howmuch)
 int howmuch;
 {
@@ -1016,34 +1012,15 @@ int howmuch;
     if (Punished)
         u.bc_felt = 0; /* forget felt ball&chain */
 
-    forget_map(howmuch);
-    forget_traps();
-
-    /* 1 in 3 chance of forgetting some levels */
-    if (!rn2(3))
-        forget_levels(rn2(25));
-
-    /* 1 in 3 chance of forgetting some objects */
-    if (!rn2(3))
-        forget_objects(rn2(25));
-
     if (howmuch & ALL_SPELLS)
         losespells();
-    /*
-     * Make sure that what was seen is restored correctly.  To do this,
-     * we need to go blind for an instant --- turn off the display,
-     * then restart it.  All this work is needed to correctly handle
-     * walls which are stone on one side and wall on the other.  Turning
-     * off the seen bits above will make the wall revert to stone,  but
-     * there are cases where we don't want this to happen.  The easiest
-     * thing to do is to run it through the vision system again, which
-     * is always correct.
-     */
-    docrt(); /* this correctly will reset vision */
+
+    /* Forget some skills. */
+    drain_weapon_skill(rnd(howmuch ? 5 : 3));
 }
 
 /* monster is hit by scroll of taming's effect */
-STATIC_OVL int
+static int
 maybe_tame(mtmp, sobj)
 struct monst *mtmp;
 struct obj *sobj;
@@ -1066,7 +1043,7 @@ struct obj *sobj;
     return 0;
 }
 
-STATIC_OVL boolean
+static boolean
 get_valid_stinking_cloud_pos(x,y)
 int x,y;
 {
@@ -1075,7 +1052,7 @@ int x,y;
               || distu(x, y) >= 32));
 }
 
-STATIC_OVL boolean
+static boolean
 is_valid_stinking_cloud_pos(x, y, showmsg)
 int x, y;
 boolean showmsg;
@@ -1088,7 +1065,7 @@ boolean showmsg;
     return TRUE;
 }
 
-STATIC_PTR void
+static void
 display_stinking_cloud_positions(state)
 int state;
 {
@@ -1130,7 +1107,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
     switch (otyp) {
 #ifdef MAIL
     case SCR_MAIL:
-        known = TRUE;
+        g.known = TRUE;
         if (sobj->spe == 2) {
             if (Role_if(PM_CARTOMANCER))
                 pline("The rules on this card read \"postage due\".");
@@ -1153,7 +1130,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         boolean special_armor;
         boolean same_color;
 
-        otmp = some_armor(&youmonst);
+        otmp = some_armor(&g.youmonst);
         if (!otmp) {
             strange_feeling(sobj, !Blind
                                       ? "Your skin glows then fades."
@@ -1262,7 +1239,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         if (s) {
             otmp->spe += s;
             adj_abon(otmp, s);
-            known = otmp->known;
+            g.known = otmp->known;
             /* update shop bill to reflect new higher price */
             if (s > 0 && otmp->unpaid)
                 alter_cost(otmp, 0L);
@@ -1275,7 +1252,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         break;
     }
     case SCR_DESTROY_ARMOR: {
-        otmp = some_armor(&youmonst);
+        otmp = some_armor(&g.youmonst);
         if (confused) {
             if (!otmp) {
                 strange_feeling(sobj, "Your bones itch.");
@@ -1304,7 +1281,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
                 exercise(A_CON, FALSE);
                 break;
             } else
-                known = TRUE;
+                g.known = TRUE;
         } else { /* armor and scroll both cursed */
             pline("%s.", Yobjnam2(otmp, "vibrate"));
             if (otmp->spe >= -6) {
@@ -1316,7 +1293,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
     } break;
     case SCR_CONFUSE_MONSTER:
     case SPE_CONFUSE_MONSTER:
-        if (youmonst.data->mlet != S_HUMAN || scursed) {
+        if (g.youmonst.data->mlet != S_HUMAN || scursed) {
             if (!HConfusion)
                 You_feel("confused.");
             make_confused(HConfusion + rnd(100), FALSE);
@@ -1386,7 +1363,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
             pline("This card is useless!");
         else
             pline("This scroll seems to be blank.");
-        known = TRUE;
+        g.known = TRUE;
         break;
     case SCR_REMOVE_CURSE:
     case SPE_REMOVE_CURSE: {
@@ -1401,7 +1378,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         if (scursed) {
             pline_The("scroll disintegrates.");
         } else {
-            for (obj = invent; obj; obj = obj->nobj) {
+            for (obj = g.invent; obj; obj = obj->nobj) {
                 long wornmask;
 
                 /* gold isn't subject to cursing and blessing */
@@ -1479,7 +1456,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
             if (!scursed)
                 initedog(mtmp);
             mtmp->mfading = Role_if(PM_CARTOMANCER) ? rn1(70 + 4 * u.ulevel, 30) : rn1(20, 30);
-            known = TRUE;
+            g.known = TRUE;
             break;
         }
         if (create_critters(1 + ((confused || scursed) ? 12 : 0)
@@ -1487,7 +1464,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
                             confused ? &mons[PM_ACID_BLOB]
                                      : (struct permonst *) 0,
                             FALSE))
-            known = TRUE;
+            g.known = TRUE;
         /* no need to flush monsters; we ask for identification only if the
          * monsters are not visible
          */
@@ -1555,7 +1532,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
                 mtmp->mpeaceful = 0;
             }
         }
-        known = TRUE;
+        g.known = TRUE;
  	    if (Hallucination) {
  		    You_feel("you have experienced something fundamental.");
  	    } else {
@@ -1638,7 +1615,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
                       vis_results ? "is" : "seems",
                       (results < 0) ? "un" : "");
             if (vis_results > 0)
-                known = TRUE;
+                g.known = TRUE;
         }
         break;
     }
@@ -1649,7 +1626,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
             else
                 You("have found a scroll of genocide!");
         }
-        known = TRUE;
+        g.known = TRUE;
         if (sblessed)
             do_class_genocide();
         else
@@ -1658,11 +1635,11 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
     case SCR_LIGHT:
         if (!confused || rn2(5)) {
             if (!Blind)
-                known = TRUE;
+                g.known = TRUE;
             litroom(!confused && !scursed, sobj);
             if (!confused && !scursed) {
                 if (lightdamage(sobj, TRUE, 5))
-                    known = TRUE;
+                    g.known = TRUE;
             }
         } else {
             /* could be scroll of create monster, don't set known ...*/
@@ -1682,10 +1659,10 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
               break;
         }
         /* create the engraving */
-        make_engr_at(u.ux, u.uy, explengr, moves, BURN);
+        make_engr_at(u.ux, u.uy, g.explengr, g.moves, BURN);
         /* notify the player */
         if (!Blind) {
-            known = TRUE;
+            g.known = TRUE;
             if (is_ice(u.ux, u.uy))
                 pline("The ice beneath you hisses as text appears.");
             else
@@ -1699,25 +1676,27 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         }
         break;
     case SCR_TIME:
-        known = TRUE;
+        g.known = TRUE;
         if (confused || scursed) {
             You("are frozen in time!");
             nomul(-(rn1(5, 10 - 5 * bcsign(sobj))));
-            multi_reason = "frozen in time";
-            nomovemsg = "Your natural flow of time reasserts itself.";
+            g.multi_reason = "frozen in time";
+            g.nomovemsg = "Your natural flow of time reasserts itself.";
         } else {
             if (Hallucination)
                 pline("ZA WARUDO!");
             else
                 pline("Time slows down to a crawl around you!");
-            youmonst.movement = 50 + bcsign(sobj) * 25;
+            g.youmonst.movement = 50 + bcsign(sobj) * 25;
             morehungry(rn1(30, 30));
         }
         break;
     case SPE_WEB:
     case SCR_WEB: {
         coord cc;
-        known = TRUE;
+        int i;
+        int webs = sblessed ? rn1(3, 3) : rn1(1, 2);
+        g.known = TRUE;
         register struct trap *trtmp;
         if (confused) {
             pline("You get the creepy crawlies.");
@@ -1728,36 +1707,38 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
             if (trtmp)
                 dotrap(trtmp, FORCETRAP);
             else
-                known = FALSE;
+                g.known = FALSE;
         } else {
             if (!already_known) {
                 pline("This is a scroll of web!");
             }
             cc.x = u.ux;
             cc.y = u.uy;
-            pline("Where do you want to place a web?");
             getpos_sethilite(display_stinking_cloud_positions, get_valid_stinking_cloud_pos);
-            if (getpos(&cc, TRUE, "the desired position") < 0) {
-                pline1(Never_mind);
-                break;
+            for (i = 0; i < webs; i++) {
+                pline("Where do you want to place a web?");
+                if (getpos(&cc, TRUE, "the desired position") < 0) {
+                    pline1(Never_mind);
+                    break;
+                }
+                if (!is_valid_stinking_cloud_pos(cc.x, cc.y, FALSE))
+                    break;
+                trtmp = maketrap(cc.x, cc.y, WEB);
+                if (sblessed && trtmp) {
+                    seetrap(trtmp);
+                }
+                if (MON_AT(cc.x, cc.y)) {
+                    mintrap(m_at(cc.x, cc.y));
+                }
             }
-            if (!is_valid_stinking_cloud_pos(cc.x, cc.y, FALSE))
-                break;
-            trtmp = maketrap(cc.x, cc.y, WEB);
-            if (sblessed && trtmp) {
-                seetrap(trtmp);
-            }
-            if (MON_AT(cc.x, cc.y)) {
-                mintrap(m_at(cc.x, cc.y));
-            }
-          }
-          break;
+        }
+        break;
     }
     case SCR_TELEPORTATION:
         if (confused || scursed) {
             level_tele();
         } else {
-            known = scrolltele(sobj);
+            g.known = scrolltele(sobj);
         }
         break;
     case SCR_GOLD_DETECTION:
@@ -1791,7 +1772,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         sobj = 0; /* it's gone */
         if (confused)
             You("identify this as an identify scroll.");
-        else if (!already_known || !invent) {
+        else if (!already_known || !g.invent) {
             /* force feedback now if invent became
                empty after using up this scroll */
             if (Role_if(PM_CARTOMANCER))
@@ -1809,7 +1790,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
             if (cval == 1 && sblessed && Luck > 0)
                 ++cval;
         }
-        if (invent && !confused) {
+        if (g.invent && !confused) {
             identify_pack(cval, !already_known);
         } else if (otyp == SPE_IDENTIFY) {
             /* when casting a spell we know we're not confused,
@@ -1822,8 +1803,8 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         int i;
         struct monst *mtmp, *mtmp2;
         if (scursed) {
-            if (!breathless(youmonst.data)) {
-                known = TRUE;
+            if (!breathless(g.youmonst.data)) {
+                g.known = TRUE;
                 The("air is sucked from your lungs!");
                 losehp(d(3, 4), "scroll of air", KILLED_BY_AN);
             } else {
@@ -1836,7 +1817,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
             i = 2;
         /* Ideally this should remove poison gas as well. */
         pline("A tornado whips up around you!");
-        known = TRUE;
+        g.known = TRUE;
         for (mtmp = fmon; mtmp; mtmp = mtmp2) {
             mtmp2 = mtmp->nmon;
             if (distu(mtmp->mx, mtmp->my) <= 2) {
@@ -1866,7 +1847,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         }
         break;
     case SCR_WARP_ARMOR:
-        otmp = some_armor(&youmonst);
+        otmp = some_armor(&g.youmonst);
         if (!otmp) {
             strange_feeling(sobj, "Your skin scrawls for a moment.");
             sobj = 0; /* useup() in strange_feeling() */
@@ -1904,7 +1885,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
                 else
                     u.uen = u.uenmax; /* otherwise restore current to max  */
             }
-            context.botl = 1;
+            g.context.botl = 1;
             break;
         }
         /* known = TRUE; -- handled inline here */
@@ -1925,7 +1906,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
             recharge(otmp, scursed ? -1 : sblessed ? 1 : 0);
         break;
     case SCR_MAGIC_MAPPING:
-        if (level.flags.nommap) {
+        if (g.level.flags.nommap) {
             Your("mind is filled with crazy lines!");
             if (Hallucination)
                 pline("Wow!  Modern art.");
@@ -1943,10 +1924,10 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
                         cvt_sdoor_to_door(&levl[x][y]);
             /* do_mapping() already reveals secret passages */
         }
-        known = TRUE;
+        g.known = TRUE;
         /*FALLTHRU*/
     case SPE_MAGIC_MAPPING:
-        if (level.flags.nommap) {
+        if (g.level.flags.nommap) {
             Your("%s spins as %s blocks the spell!", body_part(HEAD),
                  something);
             make_confused(HConfusion + rnd(30), FALSE);
@@ -1964,21 +1945,20 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
             }
         }
         else{
-       			if(sobj->age > monstermoves){
+       			if(sobj->age > g.monstermoves){
        				  pline("The map is hard to see.");
        				  nomul(rnd(3));
        				  sobj->age += (long) d(3,10);
-       			} else sobj->age = monstermoves + (long) d(3,10);
+       			} else sobj->age = g.monstermoves + (long) d(3,10);
        			    do_vicinity_map(sobj);
         }
         break;
     case SCR_AMNESIA:
-        known = TRUE;
-        forget((!sblessed ? ALL_SPELLS : 0)
-               | (!confused || scursed ? ALL_MAP : 0));
+        g.known = TRUE;
+        forget((!sblessed ? ALL_SPELLS : 0));
         if (Hallucination) /* Ommmmmm! */
             Your("mind releases itself from mundane concerns.");
-        else if (!strncmpi(plname, "Maud", 4))
+        else if (!strncmpi(g.plname, "Maud", 4))
             pline(
           "As your mind turns inward on itself, you forget everything else.");
         else if (rn2(2))
@@ -2000,7 +1980,10 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         if (!already_known)
             (void) learnscrolltyp(SCR_FIRE);
         if (confused) {
-            if (Fire_resistance) {
+            if (Underwater) {
+                pline("A little %s around you vaporizes.", hliquid("water"));
+            }
+            else if (Fire_resistance) {
                 shieldeff(u.ux, u.uy);
                 if (!Blind)
                     pline("Oh, look, what a pretty fire in your %s.",
@@ -2059,7 +2042,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
             else
                 pline_The("%s rumbles %s you!", ceiling(u.ux, u.uy),
                           sblessed ? "around" : "above");
-            known = 1;
+            g.known = 1;
             sokoban_guilt();
 
             /* Loop through the surrounding squares */
@@ -2084,7 +2067,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         }
         break;
     case SCR_PUNISHMENT:
-        known = TRUE;
+        g.known = TRUE;
         if (confused || sblessed) {
             You_feel("guilty.");
             break;
@@ -2093,7 +2076,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         break;
     case SCR_CLONING: {
         register struct monst *mtmp;
-        known = TRUE;
+        g.known = TRUE;
         if (confused) {
             mtmp = makemon(&mons[PM_DOPPELGANGER], u.ux, u.uy, MM_NOWAIT);
             You("clone yourself, but your clone transforms!");
@@ -2114,7 +2097,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         if (!already_known) {
             You("have found a scroll of stinking cloud!");
         }
-        known = TRUE;
+        g.known = TRUE;
         pline("Where do you want to center the %scloud?",
               already_known ? "stinking " : "");
         cc.x = u.ux;
@@ -2142,7 +2125,7 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
     return sobj ? 0 : 1;
 }
 
-STATIC_OVL void
+static void
 specified_id()
 {
     static char buf[BUFSZ] = DUMMY;
@@ -2203,10 +2186,10 @@ boolean confused, helmet_protects, byu, skip_uswallow;
         return;
     otmp2->quan = confused ? rn1(5, 2) : 1;
     otmp2->owt = weight(otmp2);
-    if (!amorphous(youmonst.data) && !Passes_walls
-        && !noncorporeal(youmonst.data) && !unsolid(youmonst.data)) {
+    if (!amorphous(g.youmonst.data) && !Passes_walls
+        && !noncorporeal(g.youmonst.data) && !unsolid(g.youmonst.data)) {
         You("are hit by %s!", doname(otmp2));
-        dmg = dmgval(otmp2, &youmonst) * otmp2->quan;
+        dmg = dmgval(otmp2, &g.youmonst) * otmp2->quan;
         if (uarmh && helmet_protects) {
             if (is_metallic(uarmh)) {
                 pline("Fortunately, you are wearing a hard helmet.");
@@ -2362,12 +2345,12 @@ struct litmon {
     struct monst *mon;
     struct litmon *nxt;
 };
-STATIC_VAR struct litmon *gremlins = 0;
+static struct litmon *gremlins = 0;
 
 /*
  * Low-level lit-field update routine.
  */
-STATIC_PTR void
+static void
 set_lit(x, y, val)
 int x, y;
 genericptr_t val;
@@ -2414,7 +2397,7 @@ struct obj *obj;
         }
 
         /* the magic douses lamps, et al, too */
-        for (otmp = invent; otmp; otmp = otmp->nobj)
+        for (otmp = g.invent; otmp; otmp = otmp->nobj)
             if (otmp->lamplit)
                 (void) snuff_lit(otmp);
     } else { /* on */
@@ -2450,11 +2433,11 @@ struct obj *obj;
         int rx, ry;
 
         if (rnum >= 0) {
-            for (rx = rooms[rnum].lx - 1; rx <= rooms[rnum].hx + 1; rx++)
-                for (ry = rooms[rnum].ly - 1; ry <= rooms[rnum].hy + 1; ry++)
+            for (rx = g.rooms[rnum].lx - 1; rx <= g.rooms[rnum].hx + 1; rx++)
+                for (ry = g.rooms[rnum].ly - 1; ry <= g.rooms[rnum].hy + 1; ry++)
                     set_lit(rx, ry,
                             (genericptr_t) (on ? &is_lit : (char *) 0));
-            rooms[rnum].rlit = on;
+            g.rooms[rnum].rlit = on;
         }
         /* hallways remain dark on the rogue level */
     } else
@@ -2477,7 +2460,7 @@ struct obj *obj;
             move_bc(0, 0, uball->ox, uball->oy, uchain->ox, uchain->oy);
     }
 
-    vision_full_recalc = 1; /* delayed vision recalculation */
+    g.vision_full_recalc = 1; /* delayed vision recalculation */
     if (gremlins) {
         struct litmon *gremlin;
 
@@ -2538,10 +2521,10 @@ int xx, yy;
             (distu(xx,yy) > 15)?"in the distance":"nearby");
     }
 
-    vision_full_recalc = 1;	/* delayed vision recalculation */
+    g.vision_full_recalc = 1;	/* delayed vision recalculation */
 }
 
-STATIC_OVL void
+static void
 do_class_genocide()
 {
     int i, j, immunecnt, gonecnt, goodcnt, class, feel_dead = 0, ll_done = 0;
@@ -2570,14 +2553,14 @@ do_class_genocide()
             if (mons[i].mlet == class) {
                 if (!(mons[i].geno & G_GENO))
                     immunecnt++;
-                else if (mvitals[i].mvflags & G_GENOD)
+                else if (g.mvitals[i].mvflags & G_GENOD)
                     gonecnt++;
                 else
                     goodcnt++;
             }
         }
-        if (!goodcnt && class != mons[urole.malenum].mlet
-            && class != mons[urace.malenum].mlet) {
+        if (!goodcnt && class != mons[g.urole.malenum].mlet
+            && class != mons[g.urace.malenum].mlet) {
             if (gonecnt)
                 pline("All such monsters are already nonexistent.");
             else if (immunecnt || class == S_invisible)
@@ -2611,7 +2594,7 @@ do_class_genocide()
                  */
                 if (Your_Own_Role(i) || Your_Own_Race(i)
                     || ((mons[i].geno & G_GENO)
-                        && !(mvitals[i].mvflags & G_GENOD))) {
+                        && !(g.mvitals[i].mvflags & G_GENOD))) {
                     /* This check must be first since player monsters might
                      * have G_GENOD or !G_GENO.
                      */
@@ -2623,11 +2606,14 @@ do_class_genocide()
                             livelog_printf(LL_GENOCIDE, "genocided class %c", def_monsyms[class].sym);
                         }
                     }
-                    mvitals[i].mvflags |= (G_GENOD | G_NOCORPSE);
-                    reset_rndmonst(i);
+                    g.mvitals[i].mvflags |= (G_GENOD | G_NOCORPSE);
                     kill_genocided_monsters();
                     update_inventory(); /* eggs & tins */
                     pline("Wiped out all %s.", nam);
+                    if (Upolyd && vampshifted(&g.youmonst)
+                        /* current shifted form or base vampire form */
+                        && (i == u.umonnum || i == g.youmonst.cham))
+                        polyself(3); /* vampshifter back to vampire */
                     if (Upolyd && i == u.umonnum) {
                         u.mh = -1;
                         if (Unchanging) {
@@ -2642,7 +2628,7 @@ do_class_genocide()
                     /* Self-genocide if it matches either your race
                        or role.  Assumption:  male and female forms
                        share same monster class. */
-                    if (i == urole.malenum || i == urace.malenum) {
+                    if (i == g.urole.malenum || i == g.urace.malenum) {
                         u.uhp = -1;
                         if (Upolyd) {
                             if (!feel_dead++)
@@ -2653,7 +2639,7 @@ do_class_genocide()
                             gameover = TRUE;
                         }
                     }
-                } else if (mvitals[i].mvflags & G_GENOD) {
+                } else if (g.mvitals[i].mvflags & G_GENOD) {
                     if (!gameover)
                         pline("All %s are already nonexistent.", nam);
                 } else if (!gameover) {
@@ -2685,8 +2671,8 @@ do_class_genocide()
             }
         }
         if (gameover || u.uhp == -1) {
-            killer.format = KILLED_BY_AN;
-            Strcpy(killer.name, "scroll of genocide");
+            g.killer.format = KILLED_BY_AN;
+            Strcpy(g.killer.name, "scroll of genocide");
             if (gameover)
                 done(GENOCIDED);
         }
@@ -2740,12 +2726,16 @@ int how;
             }
 
             mndx = name_to_mon(buf);
-            if (mndx == NON_PM || (mvitals[mndx].mvflags & G_GENOD)) {
+            if (mndx == NON_PM || (g.mvitals[mndx].mvflags & G_GENOD)) {
                 pline("Such creatures %s exist in this world.",
                       (mndx == NON_PM) ? "do not" : "no longer");
                 continue;
             }
             ptr = &mons[mndx];
+            /* first revert if current shifted form or base vampire form */
+            if (Upolyd && vampshifted(&g.youmonst)
+                && (mndx == u.umonnum || mndx == g.youmonst.cham))
+                polyself(3); /* vampshifter (bat, &c) back to vampire */
             /* Although "genus" is Latin for race, the hero benefits
              * from both race and role; thus genocide affects either.
              */
@@ -2771,7 +2761,7 @@ int how;
                 continue;
             }
             /* KMH -- Unchanging prevents rehumanization */
-            if (Unchanging && ptr == youmonst.data)
+            if (Unchanging && ptr == g.youmonst.data)
                 killplayer++;
             break;
         }
@@ -2781,10 +2771,10 @@ int how;
     which = "all ";
     if (Hallucination) {
         if (Upolyd)
-            Strcpy(buf, youmonst.data->mname);
+            Strcpy(buf, g.youmonst.data->mname);
         else {
-            Strcpy(buf, (flags.gender && urole.name.f) ? urole.name.f
-                                                       : urole.name.m);
+            Strcpy(buf, (flags.gender && g.urole.name.f) ? g.urole.name.f
+                                                       : g.urole.name.m);
             buf[0] = lowc(buf[0]);
         }
     } else {
@@ -2800,60 +2790,59 @@ int how;
             livelog_printf(LL_GENOCIDE, "genocided %s", buf);
 
         /* setting no-corpse affects wishing and random tin generation */
-        mvitals[mndx].mvflags |= (G_GENOD | G_NOCORPSE);
+        g.mvitals[mndx].mvflags |= (G_GENOD | G_NOCORPSE);
         pline("Wiped out %s%s.", which,
               (*which != 'a') ? buf : makeplural(buf));
 
         if (killplayer) {
             /* might need to wipe out dual role */
-            if (urole.femalenum != NON_PM && mndx == urole.malenum)
-                mvitals[urole.femalenum].mvflags |= (G_GENOD | G_NOCORPSE);
-            if (urole.femalenum != NON_PM && mndx == urole.femalenum)
-                mvitals[urole.malenum].mvflags |= (G_GENOD | G_NOCORPSE);
-            if (urole.femalenum != NON_PM && mndx == urole.nbnum)
-                mvitals[urole.nbnum].mvflags |= (G_GENOD | G_NOCORPSE);
-            if (urace.femalenum != NON_PM && mndx == urace.malenum)
-                mvitals[urace.femalenum].mvflags |= (G_GENOD | G_NOCORPSE);
-            if (urace.femalenum != NON_PM && mndx == urace.femalenum)
-                mvitals[urace.malenum].mvflags |= (G_GENOD | G_NOCORPSE);
+            if (g.urole.femalenum != NON_PM && mndx == g.urole.malenum)
+                g.mvitals[g.urole.femalenum].mvflags |= (G_GENOD | G_NOCORPSE);
+            if (g.urole.femalenum != NON_PM && mndx == g.urole.femalenum)
+                g.mvitals[g.urole.malenum].mvflags |= (G_GENOD | G_NOCORPSE);
+            if (g.urole.femalenum != NON_PM && mndx == g.urole.nbnum)
+                g.mvitals[g.urole.nbnum].mvflags |= (G_GENOD | G_NOCORPSE);
+            if (g.urace.femalenum != NON_PM && mndx == g.urace.malenum)
+                g.mvitals[g.urace.femalenum].mvflags |= (G_GENOD | G_NOCORPSE);
+            if (g.urace.femalenum != NON_PM && mndx == g.urace.femalenum)
+                g.mvitals[g.urace.malenum].mvflags |= (G_GENOD | G_NOCORPSE);
 
             u.uhp = -1;
             if (how & PLAYER) {
-                killer.format = KILLED_BY;
-                Strcpy(killer.name, "genocidal confusion");
+                g.killer.format = KILLED_BY;
+                Strcpy(g.killer.name, "genocidal confusion");
             } else if (how & ONTHRONE) {
                 /* player selected while on a throne */
-                killer.format = KILLED_BY_AN;
-                Strcpy(killer.name, "imperious order");
+                g.killer.format = KILLED_BY_AN;
+                Strcpy(g.killer.name, "imperious order");
             } else { /* selected player deliberately, not confused */
-                killer.format = KILLED_BY_AN;
-                Strcpy(killer.name, "scroll of genocide");
+                g.killer.format = KILLED_BY_AN;
+                Strcpy(g.killer.name, "scroll of genocide");
             }
 
             /* Polymorphed characters will die as soon as they're rehumanized.
              */
             /* KMH -- Unchanging prevents rehumanization */
-            if (Upolyd && ptr != youmonst.data) {
-                delayed_killer(POLYMORPH, killer.format, killer.name);
+            if (Upolyd && ptr != g.youmonst.data) {
+                delayed_killer(POLYMORPH, g.killer.format, g.killer.name);
                 You_feel("%s inside.", udeadinside());
             } else
                 done(GENOCIDED);
-        } else if (ptr == youmonst.data) {
+        } else if (ptr == g.youmonst.data) {
             rehumanize();
         }
-        reset_rndmonst(mndx);
         kill_genocided_monsters();
         update_inventory(); /* in case identified eggs were affected */
     } else {
         int cnt = 0, census = monster_census(FALSE);
 
         if (!(mons[mndx].geno & G_UNIQ)
-            && !(mvitals[mndx].mvflags & (G_GENOD | G_EXTINCT)))
+            && !(g.mvitals[mndx].mvflags & (G_GENOD | G_EXTINCT)))
             for (i = rn1(3, 4); i > 0; i--) {
                 if (!makemon(ptr, u.ux, u.uy, NO_MINVENT))
                     break; /* couldn't make one */
                 ++cnt;
-                if (mvitals[mndx].mvflags & G_EXTINCT)
+                if (g.mvitals[mndx].mvflags & G_EXTINCT)
                     break; /* just made last one */
             }
         if (cnt) {
@@ -2883,8 +2872,8 @@ struct obj *sobj;
         uball->owt += IRON_BALL_W_INCR * (1 + sobj->cursed);
         return;
     }
-    if (amorphous(youmonst.data) || is_whirly(youmonst.data)
-        || unsolid(youmonst.data)) {
+    if (amorphous(g.youmonst.data) || is_whirly(g.youmonst.data)
+        || unsolid(g.youmonst.data)) {
         if (!reuse_ball) {
             pline("A ball and chain appears, then falls away.");
             dropy(mkobj(BALL_CLASS, TRUE));
@@ -2963,6 +2952,7 @@ struct obj *from_obj;
 }
 
 struct _create_particular_data {
+    int quan;
     int which;
     int fem;
     char monclass;
@@ -2979,17 +2969,34 @@ struct _create_particular_data *d;
     char *bufp = str;
     char *tmpp;
 
+    d->quan = 1 + ((g.multi > 0) ? g.multi : 0);
     d->monclass = MAXMCLASSES;
-    d->which = urole.malenum; /* an arbitrary index into mons[] */
+    d->which = g.urole.malenum; /* an arbitrary index into mons[] */
     d->fem = -1; /* gender not specified */
     d->randmonst = FALSE;
     d->maketame = d->makepeaceful = d->makehostile = FALSE;
     d->sleeping = d->saddled = d->invisible = d->hidden = FALSE;
 
+    /* quantity */
+    if (digit(*bufp)) {
+        d->quan = atoi(bufp);
+        while (digit(*bufp))
+            bufp++;
+        while (*bufp == ' ')
+            bufp++;
+    }
+#define QUAN_LIMIT (ROWNO * (COLNO - 1))
+    /* maximum possible quantity is one per cell: (0..ROWNO-1) x (1..COLNO-1)
+       [21*79==1659 for default map size; could subtract 1 for hero's spot] */
+    if (d->quan < 1 || d->quan > QUAN_LIMIT)
+        d->quan = QUAN_LIMIT - monster_census(FALSE);
+#undef QUAN_LIMIT
+    /* gear -- extremely limited number of possibilities supported */
     if ((tmpp = strstri(bufp, "saddled ")) != 0) {
         d->saddled = TRUE;
         (void) memset(tmpp, ' ', sizeof "saddled " - 1);
     }
+    /* state -- limited number of possibilitie supported */
     if ((tmpp = strstri(bufp, "sleeping ")) != 0) {
         d->sleeping = TRUE;
         (void) memset(tmpp, ' ', sizeof "sleeping " - 1);
@@ -3045,7 +3052,7 @@ struct _create_particular_data *d;
         d->monclass = MAXMCLASSES;
         return TRUE;
     } else if (d->monclass > 0) {
-        d->which = urole.malenum; /* reset from NON_PM */
+        d->which = g.urole.malenum; /* reset from NON_PM */
         return TRUE;
     }
     return FALSE;
@@ -3074,7 +3081,7 @@ struct _create_particular_data *d;
         }
         whichpm = &mons[d->which];
     }
-    for (i = 0; i <= multi; i++) {
+    for (i = 0; i < d->quan; i++) {
         if (d->monclass != MAXMCLASSES)
             whichpm = mkclass(d->monclass, 0);
         else if (d->randmonst)
@@ -3122,13 +3129,13 @@ struct _create_particular_data *d;
            or vision issues (line-of-sight, invisibility, blindness) */
         if (d->hidden && !canspotmon(mtmp)) {
             int count = couldsee(mx, my) ? 8 : 4;
-            char saveviz = viz_array[my][mx];
+            char saveviz = g.viz_array[my][mx];
 
             if (!flags.sparkle)
                 count /= 2;
-            viz_array[my][mx] |= (IN_SIGHT | COULD_SEE);
+            g.viz_array[my][mx] |= (IN_SIGHT | COULD_SEE);
             flash_glyph_at(mx, my, mon_to_glyph(mtmp, newsym_rn2), count);
-            viz_array[my][mx] = saveviz;
+            g.viz_array[my][mx] = saveviz;
             newsym(mx, my);
         }
         madeany = TRUE;

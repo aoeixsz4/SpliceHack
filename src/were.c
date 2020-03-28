@@ -31,6 +31,10 @@ register struct monst *mon;
                     howler = "chicken";
                     howl = "squawking";
                     break;
+                case PM_WEREPHANT:
+                    howler = "elephant";
+                    howl = "trumpeting";
+                    break;
                 case PM_WEREBEAR:
                     howler = "bear";
                     howl = "roaring";
@@ -93,6 +97,10 @@ int pm;
         return PM_HUMAN_WERECOCKATRICE;
     case PM_HUMAN_WERECOCKATRICE:
         return PM_WERECOCKATRICE;
+    case PM_WEREPHANT:
+        return PM_HUMAN_WEREPHANT;
+    case PM_HUMAN_WEREPHANT:
+        return PM_WEREPHANT;
     case PM_WERETIGER:
         return PM_HUMAN_WERETIGER;
     case PM_HUMAN_WERETIGER:
@@ -116,6 +124,9 @@ were_beastie(pm)
 int pm;
 {
     switch (pm) {
+    case PM_MUMAK:
+    case PM_WEREPHANT:
+        return PM_WEREPHANT;
     case PM_WERECOCKATRICE:
     case PM_COCKATRICE:
     case PM_CHICKATRICE:
@@ -227,6 +238,11 @@ char *genbuf;
             if (genbuf)
                 Strcpy(genbuf, "cockatrice");
             break;
+        case PM_WEREPHANT:
+            typ = PM_MUMAK;
+            if (genbuf)
+                Strcpy(genbuf, "elephant");
+            break;
         case PM_WERETIGER:
             typ = PM_TIGER;
             if (genbuf)
@@ -301,8 +317,8 @@ boolean purify;
         if (Race_if(PM_HUMAN_WEREWOLF)) {
             /* An attempt to purify you has been made! */
             if (in_wereform && Unchanging) {
-                killer.format = NO_KILLER_PREFIX;
-                Sprintf(killer.name, "purified while stuck in creature form");
+                g.killer.format = NO_KILLER_PREFIX;
+                Sprintf(g.killer.name, "purified while stuck in creature form");
                 pline_The("purification was deadly...");
                 done(DIED);
             } else {
@@ -319,11 +335,11 @@ boolean purify;
         You_feel("purified.");
         set_ulycn(NON_PM); /* cure lycanthropy */
     }
-    if (!Unchanging && is_were(youmonst.data)
+    if (!Unchanging && is_were(g.youmonst.data)
         && (!controllable_poly
             || !paranoid_query(ParanoidWerechange, "Remain in beast form?")))
         rehumanize();
-    else if (is_were(youmonst.data) && !u.mtimedone)
+    else if (is_were(g.youmonst.data) && !u.mtimedone)
         u.mtimedone = rn1(200, 200); /* 40% of initial were change */
 }
 

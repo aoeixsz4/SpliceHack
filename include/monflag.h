@@ -1,4 +1,4 @@
-/* NetHack 3.6	monflag.h	$NHDT-Date: 1432512778 2015/05/25 00:12:58 $  $NHDT-Branch: master $:$NHDT-Revision: 1.14 $ */
+/* NetHack 3.6	monflag.h	$NHDT-Date: 1582061573 2020/02/18 21:32:53 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.17 $ */
 /* Copyright (c) 1989 Mike Threepoint				  */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -7,58 +7,62 @@
 #ifndef MONFLAG_H
 #define MONFLAG_H
 
-#define MS_SILENT 0     /* makes no sound */
-#define MS_BARK 1       /* if full moon, may howl */
-#define MS_MEW 2        /* mews or hisses */
-#define MS_ROAR 3       /* roars */
-#define MS_GROWL 4      /* growls */
-#define MS_SQEEK 5      /* squeaks, as a rodent */
-#define MS_SQAWK 6      /* squawks, as a bird */
-#define MS_HISS 7       /* hisses */
-#define MS_BUZZ 8       /* buzzes (killer bee) */
-#define MS_GRUNT 9      /* grunts (or speaks own language) */
-#define MS_NEIGH 10     /* neighs, as an equine */
-#define MS_WAIL 11      /* wails, as a tortured soul */
-#define MS_GURGLE 12    /* gurgles, as liquid or through saliva */
-#define MS_BURBLE 13    /* burbles (jabberwock) */
-#define MS_MOO 14       /* cow */
-#define MS_CHIMERA 15   /* chimera */
-#define MS_ANT 16       /* ants */
-#define MS_PIG 17          /* boars */
-#define MS_ANIMAL 17    /* up to here are animal noises */
-#define MS_SHRIEK 18    /* wakes up others */
-#define MS_BONES 19     /* rattles bones (skeleton) */
-#define MS_LAUGH 20     /* grins, smiles, giggles, and laughs */
-#define MS_MUMBLE 21    /* says something or other */
-#define MS_IMITATE 22   /* imitates others (leocrotta) */
-#define MS_ORC MS_GRUNT /* intelligent brutes */
-#define MS_HUMANOID 23  /* generic traveling companion */
-#define MS_ARREST 24    /* "Stop in the name of the law!" (Kops) */
-#define MS_SOLDIER 25   /* army and watchmen expressions */
-#define MS_GUARD 26     /* "Please drop that gold and follow me." */
-#define MS_DJINNI 27    /* "Thank you for freeing me!" */
-#define MS_NURSE 28     /* "Take off your shirt, please." */
-#define MS_SEDUCE 29    /* "Hello, sailor." (Nymphs) */
-#define MS_VAMPIRE 30   /* vampiric seduction, Vlad's exclamations */
-#define MS_BRIBE 31     /* asks for money, or berates you */
-#define MS_CUSS 32      /* berates (demons) or intimidates (Wiz) */
-#define MS_RIDER 33     /* astral level special monsters */
-#define MS_LEADER 34    /* your class leader */
-#define MS_NEMESIS 35   /* your nemesis */
-#define MS_GUARDIAN 36  /* your leader's guards */
-#define MS_SELL 37      /* demand payment, complain about shoplifters */
-#define MS_ORACLE 38    /* do a consultation */
-#define MS_PRIEST 39    /* ask for contribution; do cleansing */
-#define MS_SPELL 40     /* spellcaster not matching any of the above */
-#define MS_WERE 41      /* lycanthrope in human form */
-#define MS_BOAST 42     /* giants */
-#define MS_GROAN 43     /* zombies */
-#define MS_PIRATE 44    /* pirates */
-#define MS_ONEEYEDSAM 45 /* One-Eyed Sam */
-#define MS_MAD 46       /* cheshire cats */
-#define MS_GNOLL 47     /* gnolls */
-#define MS_YAWN 48      /* hippos yawn when angry */
-#define MS_SIN 49       /* seven deadly sins */
+enum ms_sounds {
+    MS_SILENT = 0,     /* makes no sound */
+    MS_BARK = 1,       /* if full moon, may howl */
+    MS_MEW = 2,        /* mews or hisses */
+    MS_ROAR = 3,       /* roars */
+    MS_GROWL = 4,      /* growls */
+    MS_SQEEK = 5,      /* squeaks, as a rodent */
+    MS_SQAWK = 6,      /* squawks, as a bird */
+    MS_HISS = 7,       /* hisses */
+    MS_BUZZ = 8,       /* buzzes (killer bee) */
+    MS_GRUNT = 9,      /* grunts (or speaks own language) */
+    MS_NEIGH = 10,     /* neighs, as an equine */
+    MS_MOO = 11,       /* cow */
+    MS_WAIL = 12,      /* wails, as a tortured soul */
+    MS_GURGLE = 13,    /* gurgles, as liquid or through saliva */
+    MS_BURBLE = 14,    /* burbles (jabberwock) */
+    MS_CHIMERA = 15,   /* chimera */
+    MS_ANT = 16,       /* ants */
+    MS_PIG = 17,          /* boars */
+    MS_TRUMPET = 18,   /* trumpets (elephant) */
+    MS_CHICKEN = 19,	   /* chicken */
+    MS_ANIMAL = 19,    /* up to here are animal noises */
+    MS_SHRIEK = 20,    /* wakes up others */
+    MS_BONES = 21,     /* rattles bones (skeleton) */
+    MS_LAUGH = 22,     /* grins, smiles, giggles, and laughs */
+    MS_MUMBLE = 23,    /* says something or other */
+    MS_IMITATE = 24,   /* imitates others (leocrotta) */
+    MS_ORC = 25, /* intelligent brutes */
+    MS_HUMANOID = 26,  /* generic traveling companion */
+    MS_ARREST = 27,    /* "Stop in the name of the law!" (Kops) */
+    MS_SOLDIER = 28,   /* army and watchmen expressions */
+    MS_GUARD = 29,     /* "Please drop that gold and follow me." */
+    MS_DJINNI = 30,    /* "Thank you for freeing me!" */
+    MS_NURSE = 31,     /* "Take off your shirt, please." */
+    MS_SEDUCE = 32,    /* "Hello, sailor." (Nymphs) */
+    MS_VAMPIRE = 33,   /* vampiric seduction, Vlad's exclamations */
+    MS_BRIBE = 34,     /* asks for money, or berates you */
+    MS_CUSS = 35,      /* berates (demons) or intimidates (Wiz) */
+    MS_RIDER = 36,     /* astral level special monsters */
+    MS_LEADER = 37,    /* your class leader */
+    MS_NEMESIS = 38,   /* your nemesis */
+    MS_GUARDIAN = 39,  /* your leader's guards */
+    MS_SELL = 40,      /* demand payment, complain about shoplifters */
+    MS_ORACLE = 41,    /* do a consultation */
+    MS_PRIEST = 42,    /* ask for contribution; do cleansing */
+    MS_SPELL = 43,     /* spellcaster not matching any of the above */
+    MS_WERE = 44,      /* lycanthrope in human form */
+    MS_BOAST = 45,     /* giants */
+    MS_GROAN = 46,    /* zombies */
+    MS_PIRATE = 47,    /* pirates */
+    MS_ONEEYEDSAM = 48, /* One-Eyed Sam */
+    MS_MAD = 49,       /* cheshire cats */
+    MS_GNOLL = 50,     /* gnolls */
+    MS_YAWN = 51,      /* hippos yawn when angry */
+    MS_SIN = 52       /* seven deadly sins */
+};
 
 #define MR_FIRE 0x00000001L      /* resists fire */
 #define MR_COLD 0x00000002L      /* resists cold */
@@ -170,6 +174,7 @@
 #define M3_DISPLACES 0x0400 /* moves monsters out of its way */
 
 #define M3_ORGANIZED 0x0800 /* uses group tactics */
+#define M3_CHARGER 0x1000 /* charges from a distance */
 
 #define MZ_TINY 0          /* < 2' */
 #define MZ_SMALL 1         /* 2-4' */
@@ -194,6 +199,7 @@
 #define MH_UNDEAD 0x00001000L
 #define MH_FLAYER 0x00002000L
 #define MH_VAMPIRE 0x00004000L
+#define MH_CHANGELING 0x00008000L
 
 #define MH_ANY 0x80000000L
 
@@ -210,7 +216,7 @@
 #define G_NOCORPSE 0x0010 /* no corpse left ever */
 #define G_FREQ 0x0007     /* creation frequency mask */
 
-/* for mvitals[].mvflags (variant during game), along with G_NOCORPSE */
+/* for g.mvitals[].mvflags (variant during game), along with G_NOCORPSE */
 #define G_KNOWN 0x0004 /* have been encountered */
 #define G_GONE (G_GENOD | G_EXTINCT)
 #define G_GENOD 0x0002 /* have been genocided */
@@ -220,5 +226,6 @@
 #define MV_KNOWS_EGG                        \
     0x0008 /* player recognizes egg of this \
               monster type */
+#define G_IGNORE 0x1000 /* for mkclass(), ignore G_GENOD|G_EXTINCT */
 
 #endif /* MONFLAG_H */

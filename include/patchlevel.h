@@ -1,20 +1,20 @@
-/* NetHack 3.6	patchlevel.h	$NHDT-Date: 1557510467 2019/05/10 17:47:47 $  $NHDT-Branch: NetHack-3.6 $:$NHDT-Revision: 1.127 $ */
+/* NetHack 3.7	patchlevel.h	$NHDT-Date: 1581322658 2020/02/10 08:17:38 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.156 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Michael Allison, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
 
-/* SpliceHack 0.7.0 */
+/* SpliceHack 0.7.1 */
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 7
 /*
  * PATCHLEVEL is updated for each release.
  */
-#define PATCHLEVEL 0
+#define PATCHLEVEL 1
 /*
  * Incrementing EDITLEVEL can be used to force invalidation of old bones
  * and save files.
  */
-#define EDITLEVEL 0
+#define EDITLEVEL 16
 
 #define COPYRIGHT_BANNER_A "SpliceHack, a NetHack variant by AntiGulp. Copyright 1985-2020"
 #define COPYRIGHT_BANNER_B \
@@ -31,10 +31,27 @@
  * PP = patch level, ee = edit level, L = literal suffix "L",
  * with all four numbers specified as two hexadecimal digits.
  */
-#define VERSION_COMPATIBILITY 0x00070000L
+#define VERSION_COMPATIBILITY 0x00070100L
+
+/****************************************************************************/
+/* Version 3.7.x */
+
+/*
+ *  NetHack 3.7.0, <insert date here>
+ *
+ */
 
 /****************************************************************************/
 /* Version 3.6.x */
+
+/*  Patch 6, March 8, 2020
+ *  invalid status highlight color could be maliciously used to corrupt memory
+ *  formatting corpse names used internal buffers differently from formatting
+ *      other objects and could potentially clobber memory
+ *  avoid divide by 0 crash if 'bogusmon' (file of bogus monster types) is empty
+ *  avoid #wizrumorcheck crash if either 'rumors.tru' or 'rumors.fal' or both
+ *      were empty when makedefs built 'rumors'
+ */
 
 /*  Patch 5, January 27, 2020
  *

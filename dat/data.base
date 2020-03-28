@@ -1,5 +1,5 @@
 # NetHack 3.6	data.base
-# $NHDT-Date: 1545359287 2018/12/21 02:28:07 $  $NHDT-Branch: NetHack-3.6.2-beta01 $:$NHDT-Revision: 1.87 $
+# $NHDT-Date: 1581206724 2020/02/09 00:05:24 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.93 $
 #	Copyright (c) 1994, 1995, 1996 by the NetHack Development Team
 #	Copyright (c) 1994 by Boudewijn Wayers
 #	NetHack may be freely redistributed.  See license for details.
@@ -27,21 +27,19 @@ race angel
 	and demons will not bother to negotiate before trying to destroy you. Most
 	living beings, however, will see you as an ally, and your wings will allow you
 	to escape from many a deadly situation.
-
-	You are an angel, forceful yet gentle.
+race changeling
+	As a changeling, you live a life of constant adaptation. You can take the
+	form of a monster simply by chatting with them, and indeed are often forced
+	to do so: Changelings can only heal when they are shapeshifted.
 race drow
 	As a drow (or dark elf), you have many of the same traits as an elf, but also
 	have the ability to put enemies to sleep with your unarmed strikes.
 	Unfortunately, drow are not well-liked by many races, and even other elves
 	may view you as an enemy.
-
-	You are a drow, crafty and deadly.
 race dwarf
 	As a dwarf, you are very strong and hardy. You have access to a dangerous
 	technique that allows you to erupt with rage and lay waste to your enemies,
 	and you are very good at digging tunnels.
-
-	You are a dwarf, industrious and indomitable.
 race elf
 	As an elf, you are generally dextrous and intelligent, but somewhat frail.
 	The touch of iron is uncomfortable for you, and should be avoided when
@@ -49,66 +47,47 @@ race elf
 	artificially induced sleep.
 	Other elves will generally view you as an ally, while orcs will attack you on
 	sight.
-
-	You are an elf, noble and fair.
 race ghoul
 	As a ghoul, you have many natural advantages. You are immune to level drain
 	and poison, and can paralyze others with an unarmed attack.
 	However, you can only consume rotting corpses, and only other ghouls are
 	likely to keep you company.
-
-	You are a ghoul, ageless and immortal.
 race gnome
 	As a gnome, your brain and wits are your greatest assets. You have access to
 	a technique that allows you to vanish without a trace, and eventually learn
 	how to upgrade your items. Sadly, humans do not tend to take very kindly to
 	your creativity, but you can always find a welcoming gnomish community in the
 	local mines.
-
-	You are a gnome, inventive and flexible.
 race human
 	As a human, you are extremely well-rounded, and can excel at anything you
 	choose to focus on. With hard work, you are capable of increasing your
 	strength to incredible levels, and have few weaknesses.
-
-	You are a human, adaptable and resourceful.
 race infernal
 	As an infernal, you are extremely physically powerful. You are completely
 	immune to fire, and as you gain experience you will learn to quickly
 	regenerate from even the most deadly of injuries. These powers come with a
 	price, however. The touch of silver is incredibly deadly, and many monsters
 	have prepared for your presence in the dungeon.
-
-	You are an infernal, unstoppable and ruthless.
 race merfolk
 	As a merfolk, water is your home. You are an incredible swimmer, and
 	eventually will learn to breathe water. When you swim, your possessions are
 	protected from harm. This is particularly useful, since a large portion of the
 	dungeon has been flooded. You also have access to a powerful technique that
 	allows you to drown your enemies.
-
-	You are a merfolk, wily and willful.
 race orc
 	As an orc, you are quite strong, but lacking in intelligence and charisma.
 	You are decently hardy, and never have to fear being poisoned.
 	Other orcs will generally view you as an ally, but many races do not take
 	kindly to your presence, elves in particular.
-
-	You are an orc, powerful and proud.
-
 race werewolf
 	As a werewolf, you live a cursed life. You are unable to control your form,
 	and civilized humans are terrified of you. Physically, however, you are
 	unmatched, and have access to techniques which allow you to grow claws and
 	fly into a berserk rage.
-
-	You are a werewolf, full of primal fury.
-
 race vampire
 	As a vampire, blood means everything. You must drink blood to survive, and
 	take lives to live.
 
-	You are a vampire, child of night.
 role arc
 	You are an archeologist. You begin your adventure well-equipped for dungeon
 	delving, and are capable of using many unique weapons.
@@ -253,10 +232,6 @@ fused *
 merged *
 	These unstable hybrids are a combination of many different
 	monsters forcibly merged into a single body.
-antigulp
-	Creator of SpliceHack. Likes working with undocumented code
-	and making sandwiches. If your game crashes, you know who
-	to blame.
 amaterasu omikami
 	The Shinto sun goddess, Amaterasu Omikami is the central
 	figure of Shintoism and the ancestral deity of the imperial
@@ -321,6 +296,10 @@ amulet of yendor
 	immortality to the adventurer who can deliver it from the
 	depths of Moloch's Sanctum and offer it on the appropriate high
 	altar on the Astral Plane.
+ancient thornswell
+* thornswell
+	If a tree falls on someone in the forest and no one is around
+	to hear it, will anyone hear that person scream?
 angel*
 *angel
 avatar*
@@ -376,6 +355,10 @@ ant
 	fiercely as its small, distant cousin.  Various varieties
 	exist, and they are known and feared for their relentless
 	persecution of their victims.
+antigulp
+	Creator of SpliceHack. Likes working with undocumented code
+	and making sandwiches. If your game crashes, you know who
+	to blame.
 anu
 	Anu was the Babylonian god of the heavens, the monarch of
 	the north star.  He was the oldest of the Babylonian gods,
@@ -615,7 +598,14 @@ barghest
 	the tale. Some believe that they are an omen of bad luck,
 	while others believe the barghest to be a shapeshifter or
 	some type of gremlin.
+bar-lgura
+	When strong, avoid them. If of high morale, depress them. 
+	Seem humble to fill them with conceit. If at ease, exhaust them. 
+	If united, separate them. Attack their weaknesses. 
+	Emerge to their surprise.
+		[ The Art of War, by Sun Tzu ]
 baseball bat
+bat from hell
 	The sneer is gone from Casey’s lip, his teeth are clenched in hate,
 	He pounds with cruel violence his bat upon the plate;
 	And now the pitcher holds the ball, and now he lets it go,
@@ -714,6 +704,7 @@ blind io
 	own.  Several were currently hovering above the table.
 	    [ The Colour of Magic, by Terry Pratchett ]
 boar
+pig
 	My memory...hehe. King Robert Baratheon...murdered by a pig. 
 	Give me something for the pain, and let me die.
 		[ A Game of Thrones, by George R.R. Martin ]
@@ -1082,6 +1073,12 @@ chameleon
 	with such ferocity that Bink's mirth abated.  If its malice
 	could strike him, he would be horribly dead.
 		[ A Spell for Chameleon, by Piers Anthony ]
+changeling *
+shifter
+	She looked upon the child, with its perfect curly hair and
+	round, ebullient face, and she wept.
+
+	"That is not my son! What have you done with my son?"
 charo*n
 	When an ancient Greek died, his soul went to the nether world:
 	the Hades.  To reach the nether world, the souls had to cross
@@ -1091,10 +1088,10 @@ charo*n
 	of-kin would place a coin under his tongue, to pay the ferry-
 	man.
 cheshire cat
-	“Alice asked the Cheshire Cat, who was sitting in a tree, “What road do I take?”
-	The cat asked, “Where do you want to go?”
-	“I don’t know,” Alice answered.
-	“Then,” said the cat, “it really doesn’t matter, does it?”
+	"Alice asked the Cheshire Cat, who was sitting in a tree, "What road do I take?"
+	The cat asked, "Where do you want to go?"
+	"I don’t know," Alice answered.
+	"Then," said the cat, "it really doesn’t matter, does it?"
 		[Alice in Wonderland, by Lewis Carrol ]
 chest
 large box
@@ -1117,6 +1114,15 @@ large box
 	glittering cascade, they gave forth the sound of hail beating
 	against the windowpanes.
 		[ The Count of Monte Cristo, by Alexandre Dumas ]
+chicken
+	C - That's the way it begins
+	H - Is the next letter in
+	I - Is the middle of the word
+	C - You've already heard
+	K - That's the name of the hen
+	E - Now you're nearing the N
+	C - H - I - C - K - E - N, that's the way you spell chicken!
+		[Unknown]
 chih*sung*tzu
 	A character in Chinese mythology noted for bringing about the
 	end of a terrible drought which threatened the survival of
@@ -1439,7 +1445,6 @@ lord of the foocubi
 	For love is no part of the dreamworld. Love belongs to Desire,
 	and Desire is always cruel.
 		[ The Sandman, by Neil Gaiman ]
-
 dark one
 	... But he ruled rather by force and fear, if they might
 	avail; and those who perceived his shadow spreading over the
@@ -1465,8 +1470,9 @@ dart*
 	Turn to a golden staff.
 		[ Gifts, by Mary Coleridge ]
 death maggot
+corpseworm
 	Maggots are alive, but feast on the dead.
-	Death maggots are dead, but feast on the living.
+	Corpseworms are dead, but feast on the living.
 demogorgon
 	A terrible deity, whose very name was capable of producing the
 	most horrible effects.  He is first mentioned by the 4th-century
@@ -1696,6 +1702,9 @@ dread pirate roberts
  	Pirate Roberts either. His name was Cummerbund. The real
  	Roberts has been retired 15 years and living like a king in
  	Patagonia.'
+dream thief
+	To sleep, perchance, to dream.
+		[ Hamlet, by William Shakespeare ]
 drop bear
 	A drop bear (sometimes dropbear) is a hoax in contemporary 
 	Australian folklore featuring a predatory, carnivorous version of the koala.
@@ -1786,9 +1795,12 @@ elwing
 		[ The Silmarillion, by J.R.R. Tolkien ]
 earmuffs
 	For when you just don't want to listen to anyone.
-earthshark
+landshark
 	Some sharks swim not through water, but through land. These beasts
 	are also notable for their uncommonly good jumping ability.
+echidna
+	The echidna enjoys flexing its muscles, but it has a strange aversion
+	to laughter. Natural enemies of the echidna include hedgehogs.
 eel
 giant eel
 	The behaviour of eels in fresh water extends the air of
@@ -1800,6 +1812,12 @@ giant eel
 	rather than dead creatures and are not habitual eaters of
 	carrion.
 	    [ Freshwater Fishes of Canada, by Scott and Crossman ]
+efreet
+	Efreeti are cousins of djinn that are native to the elemental plane
+	of Fire, and are particularly common in the City of Brass. Like djinn,
+	efreeti are capable of granting wishes. Unlike djinn, however, 
+	efreeti are not opposed to making their own wishes when their lives
+	are in danger.
 egg
 	But I asked why not keep it and let the hen sit on it till it
 	hatched, and then we could see what would come out of it.
@@ -1990,6 +2008,8 @@ eyes of the overworld
 	Usually, there is nothing to be seen.  However, the wearer
 	is also able to look back and see the area around herself,
 	much like looking on a map.  Why anyone would want to ...
+failure eidolon
+	Fbzrgvzrf, gur wbhearl bs n ureb vf phg fubeg.
 fedora
 	Some hats can only be worn if you're willing to be jaunty, to set
 	them at an angle and to walk beneath them with a spring in your
@@ -2302,6 +2322,8 @@ giant fly
 	These enormous insects are little threat to experienced
 	dungeoneers. The maddening buzz of their wings is quickly
 	silenced by the strike of a blade.
+glowing eye
+	The soul shines with a light that can pierce any darkness.
 gnoll*
 	These bipedal hyenas serve Yeenoghu, and are almost unmatched
 	in combat.
@@ -2607,6 +2629,11 @@ hermes
 hezrou
 	"Hezrou" is the common name for the type II demon.  It is
 	among the weaker of demons, but still quite formidable.
+hippo
+hippopo*
+	Hippos are deceptively dangerous animals, and should be
+	treated with great caution. Disturbing a hungry, hungry
+	animal is not to be treated lightly, after all.
 hippocrates
 	Greek physician, recognized as the father of medicine.  He
 	is believed to have been born on the island of Cos, to have
@@ -3000,7 +3027,7 @@ vorpal*
 	  The vorpal blade went snicker-snack!
 	He left it dead, and with its head
 	  He went galumphing back.
-				[ Jabberwocky, by Lewis Carroll ]
+	[ Jabberwocky, by Lewis Carroll ]
 jacinth*
 	Sweet in the rough weather
 	  The voice of the turtle-dove
@@ -3250,6 +3277,9 @@ kos
 	dooms, by the brown bones of Nalgron my father and by his
 	sword Graywand here at my side!"
 	   [ Swords and Deviltry, by Fritz Leiber ]
+kostchtchie
+	Kostchtchie holds dominion over long forgotten, long frozen
+	wastes.
 koto
 	A Japanese harp.
 *kraken
@@ -3361,6 +3391,9 @@ lava
 	already hellish scene.  A dark, forboding passage exits to the
 	south.
 		[ Adventure, by Will Crowther and Don Woods. ]
+lawyer
+	If there were no bad people, there would be no good lawyers.
+		[ Charles Dickens ]
 leash
 	They had splendid heads, fine shoulders, strong legs, and
 	straight tails.  The spots on their bodies were jet-black and
@@ -4112,6 +4145,10 @@ neanderthal*
 	1.  Valley between Duesseldorf and Elberfeld in Germany,
 	where an ancient skull of a prehistoric ancestor to modern
 	man was found.  2.  Human(oid) of the race mentioned above.
+necromancer
+	I never had many friends, growing up. Then I went to the local
+	graveyard, and found all the friends I could ask for.
+		[]
 neferet
 neferet the green
 	Neferet the Green holds office in her hidden tower, only
@@ -4161,10 +4198,11 @@ nosferatu
   of the vampire NOSFERATU.
     	[ from _Nosferatu_, written by Henrik Galeen, 1922 ]
 nova fox
-	Nova foxes hail from a world of fire and lightning. Their
-	shrill cry signals death for those that cannot keep up
-	with their speed. There are even rumors that they can turn
-	magical attacks back against the user.
+vulpenferno
+	Vulpenfernoes are elemental foxes that hail from a world 
+	of fire and lightning. Their shrill cry signals death for 
+	those that cannot keep up with their speed. There are even
+	rumors that they can turn magical attacks back against mages.
 nunchaku
 	A nunchaku is two sections of wood (or metal in modern
 	incarnations) connected by a cord or chain.  There is much
@@ -4461,9 +4499,12 @@ pelias
 	Pelias cryptically.  "You see my fleshy guise, he saw my naked
 	soul."
 	    [ Conan the Usurper, by Robert E. Howard and L. Sprague de Camp ]
+* penguin
+	The answer to every problem involved penguins.
+		[ Throne of Fire, by Rick Riordan ]
 phoenix
-	“Fawkes is a phoenix, Harry. Phoenixes burst into flame when it
-	is time for them to die and are reborn from the ashes.”
+	"Fawkes is a phoenix, Harry. Phoenixes burst into flame when it
+	is time for them to die and are reborn from the ashes."
 	    [ Harry Potter and the Chamber of Secrets, by J.K. Rowling ]
 pick*ax*
 broad pick
@@ -4593,6 +4634,8 @@ platinum yendorian express card
 	the carrier by half.  It also protects from magic missile
 	attacks.  Finally, its power is such that when invoked, it
 	can charge other objects.
+platypus
+	A creature of intense contradiction.
 # playing style, rather vague topic but these quotes are too apt to pass up
 player
 play* style
@@ -5004,6 +5047,9 @@ rock mole
 	eat anything they come across in their diggings, although it
 	is still unknown how they convert some of these things into
 	something of nutritional value.
+rodent of unusual size
+	Rodents of unusual size? I don't think they exist.
+		[The Princess Bride]
 rodent*
 	A gnawing mammal (order _Rodentia_) having in each jaw two
 	(rarely four) incisors, growing continually from persistent
@@ -5309,6 +5355,7 @@ shito
 *shopkeeper
 arms dealer
 one-eyed sam
+extraplanar merchant
 	There have been three general theories put forward to explain
 	the phenomenon of the wandering shops or, as they are
 	generically known, _tabernae vagantes._
@@ -5342,6 +5389,18 @@ screamer
 	its fetid bulk looming overhead... The monster was some kind of
 	great dark worm, but that was about all they were sure of.
 		[ The Adventurers, Epic IV, by Thomas A. Miller ]
+sin
+seven *sins
+wrath
+pride
+greed
+gluttony
+lust
+pride
+envy
+	You will always be fond of me. I represent to you all the sins
+	you never had the courage to commit.
+		[ A Portrait of Dorian Grey, by Oscar Wilde ]
 throwing star
 shuriken
 	You know, that's what I hate most about fighting against magic:
@@ -5352,7 +5411,7 @@ shuriken
 	kill her, but she wouldn't be fighting anyone for a while.
 		[ Jhereg, by Steven Brust ]
 * skeleton
-bone beast
+crawling cemetery
 	A skeleton is a magically animated undead creature.  Unlike
 	shades, only a humanoid creature can be used to create a
 	skeleton.  No one knows why this is true, but it has become
@@ -5650,6 +5709,7 @@ straw golem
 	pole stuck up its back.
 		[ The Wonderful Wizard of Oz, by L. Frank Baum ]
 substance warper
+transmuter
 	Ask not, what your items can do to it.  Ask what it can do
 	to your items.
 sunsword
@@ -5732,6 +5792,9 @@ thug
 	for another 50 years or so.
 	In common parlance the word is used for any violent "tough".
 		[ Brewer's Concise Dictionary of Phrase and Fable ]
+thriae
+thriea
+	Trifling with bee maidens often leads to getting stung.
 tiger
 	1.  A well-known tropical predator (_Felis tigris_): a
 	feline.  It has a yellowish skin with darker spots or
@@ -5980,6 +6043,8 @@ tyr
 	at the place now called 'the wolf's joint;' and Tyr is one-
 	handed, and is not called a reconciler of men.
 			[ The Prose Edda, by Snorri Sturluson ]
+ulsfark
+	Ulsfarks are male berserkers clad in the pelts of wolves.
 *hulk
 	Umber hulks are powerful subterranean predators whose
 	iron-like claws allow them to burrow through solid stone in
@@ -6237,9 +6302,9 @@ whistle
 		 'Oh, Whistle, and I'll Come to You My Lad']
 # werecritter -- see "lycanthrope"
 wings*
-	“The Guide says there is an art to flying", said Ford,
+	"The Guide says there is an art to flying", said Ford,
 	"or rather a knack. The knack lies in learning how to throw
-	yourself at the ground and miss.”
+	yourself at the ground and miss."
 		[Life, the Universe and Everything, by Douglas Adams]
 *wight
 	When he came to himself again, for a moment he could recall
@@ -6256,6 +6321,15 @@ wings*
 	bogs, swamps, or marshes. It resembles a flickering lamp and is said to
 	recede if approached, drawing travellers from the safe paths.
 		[ Wikipedia, the free encyclopedia ]
+win
+winner
+winning
+	... the rules of Brockian Ultra Cricket, as played in the higher
+	dimensions.  A full set of rules is so massively complicated ...
+	A brief summary, however, follows:
+	...
+	/Rule Six/:  The winning team shall be the first team that wins.
+	    [ Life, the Universe and Everything, by Douglas Adams ]
 # note: need to convert player character "gnomish wizard" into just "wizard"
 # in the lookup code to avoid conflict with the monster of that same name
 ~gnomish wizard
@@ -6284,6 +6358,7 @@ wizard of yendor
 wolf
 *wolf
 *wolf cub
+*wolf pup
 	The ancestors of the modern day domestic dog, wolves are
 	powerful muscular animals with bushy tails.  Intelligent,
 	social animals, wolves live in family groups or packs made
@@ -6382,6 +6457,9 @@ fell beast
 	Later, all you will be able to remember are its eyes.  They
 	are rich mud-brown, and they hold your own without effort.
 		[ Hunter, In Darkness, by Andrew Plotkin ]
+*wurm
+	I vote for outer space. No way these are local boys.
+		[Earl Basset, Tremors]
 xan
 	They sent their friend the mosquito [xan] ahead of them to
 	find out what lay ahead.  "Since you are the one who sucks
@@ -6450,3 +6528,5 @@ zouthern animal
 zruty
 	The zruty are wild and gigantic beings, living in the
 	wildernesses of the Tatra mountains.
+*zuggotomoy
+	Demon queen of fungi and foe of Juiblex.

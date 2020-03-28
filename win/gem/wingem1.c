@@ -119,7 +119,6 @@ static const struct pad {
 #define TBUFSZ 300
 #define BUFSZ 256
 extern int yn_number;                          /* from decl.c */
-extern char toplines[TBUFSZ];                  /* from decl.c */
 extern char mapped_menu_cmds[];                /* from options.c */
 extern int mar_iflags_numpad(void);            /* from wingem.c */
 extern void Gem_raw_print(const char *);       /* from wingem.c */
@@ -1425,8 +1424,9 @@ mar_more()
 
 /************************* Gem_start_menu *******************************/
 void
-Gem_start_menu(win)
+Gem_start_menu(win, mbehavior)
 winid win;
+unsigned long mbehavior UNUSED;
 {
     win = win;
     if (invent_list) {
@@ -1647,13 +1647,13 @@ const char *str;
         }
         message_line[mesg_hist - 1] = tmp;
     }
-    strcpy(toplines, str);
+    strcpy(g.toplines, str);
     messages_pro_zug++;
     msg_max++;
 
-    if ((int) strlen(toplines) >= msg_width) {
+    if ((int) strlen(g.toplines) >= msg_width) {
         int pos = msg_width;
-        tmp = toplines + msg_width;
+        tmp = g.toplines + msg_width;
         while (*tmp != ' ' && pos >= 0) {
             tmp--;
             pos--;
@@ -1661,12 +1661,12 @@ const char *str;
         if (pos <= 0)
             pos = msg_width; /* Mar -- Oops, what a word :-) */
         message_age[msg_max] = TRUE;
-        strncpy(message_line[msg_max], toplines, pos);
+        strncpy(message_line[msg_max], g.toplines, pos);
         message_line[msg_max][pos] = 0;
-        rest = strcpy(buf, toplines + pos);
+        rest = strcpy(buf, g.toplines + pos);
     } else {
         message_age[msg_max] = TRUE;
-        strncpy(message_line[msg_max], toplines, msg_width);
+        strncpy(message_line[msg_max], g.toplines, msg_width);
         rest = 0;
     }
 
@@ -1784,7 +1784,10 @@ char acc;
 
     for (curr = invent_list; start-- && curr; curr = curr->Gmi_next)
         ;
-    for (; page-- && curr; curr = curr->Gmi_next)
+    for (; page-- && curr; curr = curr->Gmi_next) {
+        if (!menuitem_invert_test(0, curr->Gmi_itemflags, curr->Gmi_selected)
+            continue;
+
         if (curr->Gmi_identifier && (acc == 0 || curr->Gmi_groupacc == acc)) {
             if (curr->Gmi_selected) {
                 curr->Gmi_selected = FALSE;
@@ -1792,6 +1795,7 @@ char acc;
             } else
                 curr->Gmi_selected = TRUE;
         }
+    }
 }
 
 /************************* Inv_Handler and Inv_Init
@@ -2548,7 +2552,7 @@ winid window;
         use_rip = FALSE;
         break;
     case NHW_MENU:
-        Gem_start_menu(window); /* delete invent_list */
+        Gem_start_menu(window, MENU_BEHAVE_STANDARD); /* delete invent_list */
         test_free(Menu_title);
         break;
     case 0: /* No window available, probably an error message? */
