@@ -59,7 +59,8 @@ struct spell {
 #define MGC_DEATH_TOUCH 11
 /* Splice magic spells */
 #define MGC_SONIC_SCREAM 12
-#define MGC_GAS_CLOUD 13
+#define MGC_CALL_UNDEAD 13
+#define MGC_GAS_CLOUD 14
 #define MGC_LAST MGC_GAS_CLOUD
 
 /* Vanilla clerical spells */

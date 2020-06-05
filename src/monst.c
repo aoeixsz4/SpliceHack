@@ -4329,7 +4329,7 @@ struct permonst _mons2[] = {
         M2_NOPOLY | M2_STALK | M2_HOSTILE | M2_PNAME | M2_NASTY
             | M2_PRINCE | M2_MALE | M2_COLLECT,
         M3_WAITFORU | M3_WANTSBOOK | M3_WANTSAMUL | M3_INFRAVISIBLE
-            | M3_INFRAVISION, MH_DEMON,
+            | M3_INFRAVISION, MH_DEMON | MH_UNDEAD,
         36, HI_LORD),
     MON("Geryon", S_DEMON, LVL(72, 3, -13, 75, 15),
         (G_HELL | G_NOCORPSE | G_NOGEN | G_UNIQ),

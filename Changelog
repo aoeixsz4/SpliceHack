@@ -30,8 +30,18 @@ QOL
 - Display the number of times that the player has violated the celibate conduct
   in their conduct.
 
+Monster Spellcasting
+- Monsters have spell lists that vary based on the individual monster.
+- The Wizard of Yendor has an enormous spell list, making him highly unpredictable
+  to fight against.
+- Numerous new monster spells have been added:
+  - Call Undead (from SLASH'EM). Call undead has been modified so that it revives
+    nearby corpses.
+
 Miscelaneous
 - Kicking a tree has a chance of spawning a serval or (very rarely) a jaguar.
+- Orcus is treated as being undead, as well as a demon. This is in line with lore,
+  and also alters his spell selection slightly so that he has access to call undead.
 
 Balance
 - Being deaf does not make you resistant to sonic attacks.

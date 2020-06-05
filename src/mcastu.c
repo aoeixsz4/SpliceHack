@@ -40,7 +40,15 @@ static const struct spellset {
         { 0, 0 }
     },
     rodney_spells[] = {
-        { MGC_CLONE_WIZ, 19 }
+        { MGC_CLONE_WIZ, 19 },
+        { MGC_CALL_UNDEAD, 19 },
+        { MGC_SONIC_SCREAM, 19 },
+        { 0, 0 }
+    },
+    undead_mage_spells[] = {
+        { MGC_GAS_CLOUD, 7 },
+        { MGC_CALL_UNDEAD, 11 },
+        { 0, 0 }
     };
 
 static void FDECL(m_learn_spell, (struct monst *, int, BOOLEAN_P));
@@ -131,6 +139,8 @@ int dam;
     /* Rodney spells */
     if (mtmp->data == &mons[PM_WIZARD_OF_YENDOR]) {
         m_learn_spell_list(mtmp, rodney_spells, TRUE);
+    } else if (is_undead(mtmp->data) && arcane) {
+        m_learn_spell_list(mtmp, undead_mage_spells, arcane);
     }
     mtmp->minitspell = 1;
 }
@@ -462,6 +472,24 @@ int spellnum;
         dmg = 0;
         break;
     }
+    case MGC_CALL_UNDEAD:
+        {
+            coord mm;
+            if (Invis && !perceives(mtmp->data)) {
+                mm.x = mtmp->mux;
+                mm.y = mtmp->muy;
+            }  else {
+                mm.x = u.ux;   
+                mm.y = u.uy; 
+            }
+            if (!Blind)
+                pline("Undead creatures are called forth from the grave!");   
+            else
+                pline("The smell of corpse dust fills the air.");
+            mkundead(&mm, TRUE, NO_MINVENT);   
+        }
+        dmg = 0;   
+        break;   
     case MGC_AGGRAVATION:
         You_feel("that monsters are aware of your presence.");
         aggravate();
@@ -801,6 +829,7 @@ int spellnum;
         switch (spellnum) {
         case MGC_CLONE_WIZ:
         case MGC_SUMMON_MONS:
+        case MGC_CALL_UNDEAD:
         case MGC_AGGRAVATION:
         case MGC_DISAPPEAR:
         case MGC_HASTE_SELF:
@@ -847,7 +876,7 @@ int spellnum;
       						&& spellnum == MGC_CLONE_WIZ)
       	    return TRUE;
       #ifndef TAME_SUMMONING
-             if (spellnum == MGC_SUMMON_MONS)
+             if (spellnum == MGC_SUMMON_MONS || spellnum == MGC_CALL_UNDEAD)
       	    return TRUE;
       #endif
      } else if (adtyp == AD_CLRC) {
@@ -881,7 +910,7 @@ int spellnum;
       	if (u.mh == u.mhmax && spellnum == MGC_CURE_SELF)
       	    return TRUE;
       #ifndef TAME_SUMMONING
-             if (spellnum == MGC_SUMMON_MONS)
+            if (spellnum == MGC_SUMMON_MONS || spellnum == MGC_CALL_UNDEAD)
       	    return TRUE;
       #endif
     } else if (adtyp == AD_CLRC) {
@@ -912,7 +941,7 @@ int spellnum;
         /* aggravate monsters, etc. won't be cast by peaceful monsters */
         if (mtmp->mpeaceful
             && (spellnum == MGC_AGGRAVATION || spellnum == MGC_SUMMON_MONS
-                || spellnum == MGC_CLONE_WIZ))
+                || spellnum == MGC_CLONE_WIZ || spellnum == MGC_CALL_UNDEAD))
             return TRUE;
         /* gas clouds on water level */
         if (Is_waterlevel(&u.uz) && spellnum == MGC_GAS_CLOUD)
@@ -935,6 +964,7 @@ int spellnum;
             return TRUE;
         /* don't summon monsters if it doesn't think you're around */
         if (!mcouldseeu && (spellnum == MGC_SUMMON_MONS
+                            || spellnum == MGC_CALL_UNDEAD
                             || (!mtmp->iswiz && spellnum == MGC_CLONE_WIZ)))
             return TRUE;
         if ((!mtmp->iswiz || g.context.no_of_wizards > 1)
@@ -1147,7 +1177,8 @@ castmm(mtmp, mdef, mattk)
    	        if (is_undirected_spell(mattk->adtyp, spellnum)
                 && (mattk->adtyp != AD_SPEL
                 || (spellnum != MGC_AGGRAVATION &&
-                  spellnum != MGC_SUMMON_MONS))) {
+                  spellnum != MGC_SUMMON_MONS &&
+                  spellnum != MGC_CALL_UNDEAD))) {
      		    if (mattk->adtyp == AD_SPEL)
      		        cast_wizard_spell(mtmp, dmg, spellnum);
      		    else
@@ -1384,6 +1415,7 @@ int spellnum;
        	}
        	dmg = 0;
        	break;
+    case MGC_CALL_UNDEAD:
     case MGC_SUMMON_MONS:
     {
      	int count = 0;
