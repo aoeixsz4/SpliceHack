@@ -9,41 +9,45 @@
 
 extern void demonpet();
 
-/* monster mage spells */
-enum mcast_mage_spells {
-    MGC_PSI_BOLT = 0,
-    MGC_CURE_SELF,
-    MGC_HASTE_SELF,
-    MGC_STUN_YOU,
-    MGC_DISAPPEAR,
-    MGC_WEAKEN_YOU,
-    MGC_DESTRY_ARMR,
-    MGC_CURSE_ITEMS,
-    MGC_AGGRAVATION,
-    MGC_SUMMON_MONS,
-    MGC_CLONE_WIZ,
-    MGC_DEATH_TOUCH,
-    MGC_SONIC_SCREAM,
-    MGC_GAS_CLOUD
-};
+static const struct spellset {
+    int spell_id;
+    int min_level;
+} mage_spells[] = {
+        { MGC_PSI_BOLT, 1 },
+        { MGC_CURE_SELF, 2 },
+        { MGC_HASTE_SELF, 3 },
+        { MGC_STUN_YOU, 4 },
+        { MGC_DISAPPEAR, 5 },
+        { MGC_WEAKEN_YOU, 7 },
+        { MGC_DESTRY_ARMR, 9 },
+        { MGC_CURSE_ITEMS, 11 },
+        { MGC_AGGRAVATION, 14 },
+        { MGC_SUMMON_MONS, 16 },
+        { MGC_DEATH_TOUCH, 21 },
+        { 0, 0 }
+    },
+    cleric_spells[] = {
+        { CLC_OPEN_WOUNDS, 1 },
+        { CLC_CURE_SELF, 2 },
+        { CLC_CONFUSE_YOU, 3 },
+        { CLC_PARALYZE, 5 },
+        { CLC_BLIND_YOU, 6 },
+        { CLC_INSECTS, 9 },
+        { CLC_CURSE_ITEMS, 10 },
+        { CLC_LIGHTNING, 12 },
+        { CLC_FIRE_PILLAR, 13 },
+        { CLC_GEYSER, 14 },
+        { 0, 0 }
+    },
+    rodney_spells[] = {
+        { MGC_CLONE_WIZ, 19 }
+    };
 
-/* monster cleric spells */
-enum mcast_cleric_spells {
-    CLC_OPEN_WOUNDS = 0,
-    CLC_CURE_SELF,
-    CLC_CONFUSE_YOU,
-    CLC_PARALYZE,
-    CLC_BLIND_YOU,
-    CLC_INSECTS,
-    CLC_CURSE_ITEMS,
-    CLC_LIGHTNING,
-    CLC_FIRE_PILLAR,
-    CLC_GEYSER
-};
-
+static void FDECL(m_learn_spell, (struct monst *, int, BOOLEAN_P));
+static boolean FDECL(m_knows_spell, (struct monst *, int, BOOLEAN_P));
+static int FDECL(choose_monster_spell, (struct monst *, BOOLEAN_P));
+static void FDECL(m_learn_spell_list, (struct monst *, const struct spellset *, BOOLEAN_P));
 static void FDECL(cursetxt, (struct monst *, BOOLEAN_P));
-static int FDECL(choose_magic_spell, (int));
-static int FDECL(choose_clerical_spell, (int));
 static int FDECL(m_cure_self, (struct monst *, int));
 static void FDECL(cast_wizard_spell, (struct monst *, int, int));
 static void FDECL(cast_cleric_spell, (struct monst *, int, int));
@@ -55,6 +59,81 @@ static void FDECL(ucast_wizard_spell,(struct monst *,struct monst *,int,int));
 static void FDECL(ucast_cleric_spell,(struct monst *,struct monst *,int,int));
 
 extern const char *const flash_types[]; /* from zap.c */
+
+static void
+m_learn_spell(mtmp, spell_id, arcane)
+struct monst* mtmp;
+int spell_id;
+boolean arcane;
+{
+    if (arcane)
+		mtmp->arc_spls |= ((uint64_t)1 << spell_id);
+    else
+        mtmp->clr_spls |= ((uint64_t)1 << spell_id);
+}
+
+static
+boolean
+m_knows_spell(mtmp, spell_id, arcane)
+struct monst *mtmp;
+int spell_id;
+boolean arcane;
+{
+    if (arcane)
+        return (mtmp->arc_spls & ((uint64_t)1 << spell_id)) != 0L;
+    else
+	    return (mtmp->clr_spls & ((uint64_t)1 << spell_id)) != 0L;
+}
+
+static int
+choose_monster_spell(mtmp, arcane)
+struct monst* mtmp;
+boolean arcane;
+{
+    int final_spell = (arcane ? MGC_LAST : CLC_LAST) + 1;
+    int tmp, tries = 0;
+    do {
+        tmp = rn2(final_spell);
+        if (m_knows_spell(mtmp, tmp, arcane)) {
+            return tmp;
+        }
+        tries++;
+    } while (tries < 50);
+    return 0;
+}
+
+static
+void
+m_learn_spell_list(mtmp, spells, arcane)
+struct monst* mtmp;
+const struct spellset* spells;
+boolean arcane;
+{
+    while (spells && spells->min_level < mtmp->m_lev) {
+        m_learn_spell(mtmp, spells->spell_id, arcane);
+        spells++;
+    }
+}
+
+void
+init_mon_spells(mtmp, dam)
+struct monst* mtmp;
+int dam;
+{
+    boolean arcane = (dam == AD_SPEL);
+    const struct spellset *spells = arcane ? mage_spells : cleric_spells;
+
+    if (mtmp->minitspell)
+        return;
+
+    /* Default spells */
+    m_learn_spell_list(mtmp, spells, arcane);
+    /* Rodney spells */
+    if (mtmp->data == &mons[PM_WIZARD_OF_YENDOR]) {
+        m_learn_spell_list(mtmp, rodney_spells, TRUE);
+    }
+    mtmp->minitspell = 1;
+}
 
 /* feedback when frustrated monster couldn't cast a spell */
 static
@@ -85,107 +164,6 @@ boolean undirected;
     }
 }
 
-/* convert a level based random selection into a specific mage spell;
-   inappropriate choices will be screened out by spell_would_be_useless() */
-static int
-choose_magic_spell(spellval)
-int spellval;
-{
-    /* for 3.4.3 and earlier, val greater than 22 selected default spell */
-    while (spellval > 24 && rn2(25))
-        spellval = rn2(spellval);
-
-    switch (spellval) {
-    case 24:
-    case 23:
-        if (Antimagic || Hallucination)
-            return MGC_PSI_BOLT;
-        /*FALLTHRU*/
-    case 22:
-    case 21:
-    case 20:
-        return MGC_DEATH_TOUCH;
-    case 19:
-    case 18:
-        return MGC_CLONE_WIZ;
-    case 17:
-    case 16:
-    case 15:
-        return MGC_SUMMON_MONS;
-    case 14:
-        return MGC_AGGRAVATION;
-    case 13:
-        return MGC_SONIC_SCREAM;
-    case 12:
-    case 11:
-    case 10:
-        return MGC_CURSE_ITEMS;
-    case 9:
-    case 8:
-        return MGC_DESTRY_ARMR;
-    case 7:
-    case 6:
-        return MGC_WEAKEN_YOU;
-    case 5:
-        return MGC_GAS_CLOUD;
-    case 4:
-        return MGC_DISAPPEAR;
-    case 3:
-        return MGC_STUN_YOU;
-    case 2:
-        return MGC_HASTE_SELF;
-    case 1:
-        return MGC_CURE_SELF;
-    case 0:
-    default:
-        return MGC_PSI_BOLT;
-    }
-}
-
-/* convert a level based random selection into a specific cleric spell */
-static int
-choose_clerical_spell(spellnum)
-int spellnum;
-{
-    /* for 3.4.3 and earlier, num greater than 13 selected the default spell
-     */
-    while (spellnum > 15 && rn2(16))
-        spellnum = rn2(spellnum);
-
-    switch (spellnum) {
-    case 15:
-    case 14:
-        if (rn2(3))
-            return CLC_OPEN_WOUNDS;
-        /*FALLTHRU*/
-    case 13:
-        return CLC_GEYSER;
-    case 12:
-        return CLC_FIRE_PILLAR;
-    case 11:
-        return CLC_LIGHTNING;
-    case 10:
-    case 9:
-        return CLC_CURSE_ITEMS;
-    case 8:
-        return CLC_INSECTS;
-    case 7:
-    case 6:
-        return CLC_BLIND_YOU;
-    case 5:
-    case 4:
-        return CLC_PARALYZE;
-    case 3:
-    case 2:
-        return CLC_CONFUSE_YOU;
-    case 1:
-        return CLC_CURE_SELF;
-    case 0:
-    default:
-        return CLC_OPEN_WOUNDS;
-    }
-}
-
 /* return values:
  * 1: successful spell
  * 0: unsuccessful spell
@@ -213,15 +191,15 @@ boolean foundyou;
      * attacking casts spells only a small portion of the time that an
      * attacking monster does.
      */
+
+    init_mon_spells(mtmp, mattk->adtyp);
+
     if ((mattk->adtyp == AD_SPEL || mattk->adtyp == AD_CLRC) && ml) {
         int cnt = 40;
 
         do {
             spellnum = rn2(ml);
-            if (mattk->adtyp == AD_SPEL)
-                spellnum = choose_magic_spell(spellnum);
-            else
-                spellnum = choose_clerical_spell(spellnum);
+            spellnum = choose_monster_spell(mtmp, mattk->adtyp == AD_SPEL);
             /* not trying to attack?  don't allow directed spells */
             if (!thinks_it_foundyou) {
                 if (!is_undirected_spell(mattk->adtyp, spellnum)
@@ -1035,15 +1013,13 @@ castmm(mtmp, mdef, mattk)
    	int ret;
    	int spellnum = 0;
 
+    init_mon_spells(mtmp, mattk->adtyp);
+
    	if ((mattk->adtyp == AD_SPEL || mattk->adtyp == AD_CLRC) && ml) {
    	    int cnt = 40;
 
    	    do {
-   	        spellnum = rn2(ml);
-         		if (mattk->adtyp == AD_SPEL)
-         		    spellnum = choose_magic_spell(spellnum);
-         		else
-         		    spellnum = choose_clerical_spell(spellnum);
+   	        spellnum = choose_monster_spell(mtmp, mattk->adtyp == AD_SPEL);
            		   /* not trying to attack?  don't allow directed spells */
    	    } while(--cnt > 0 &&
    		    mspell_would_be_useless(mtmp, mdef,
@@ -1211,11 +1187,7 @@ castum(mtmp, mattk)
    	    int cnt = 40;
 
    	    do {
-   	        spellnum = rn2(ml);
-         		if (mattk->adtyp == AD_SPEL)
-         		    spellnum = choose_magic_spell(spellnum);
-         		else
-         		    spellnum = choose_clerical_spell(spellnum);
+   	        spellnum = choose_monster_spell(mtmp, mattk->adtyp == AD_SPEL);
          		/* not trying to attack?  don't allow directed spells */
          		if (!mtmp || mtmp->mhp < 1) {
          		    if (is_undirected_spell(mattk->adtyp, spellnum) &&

@@ -136,6 +136,7 @@ struct monst {
     Bitfield(wormno, 5);    /* at most 31 worms on any level */
     Bitfield(mwither, 1);   /* is withering */
     Bitfield(mtemplit, 1);  /* temporarily seen; only valid during bhit() */
+    Bitfield(minitspell, 1);/* monster has had its spells initialized */
     /* 8 free bits */
 
 #define MAX_NUM_WORMS 32    /* should be 2^(wormno bitfield size) */
@@ -177,6 +178,8 @@ struct monst {
 
     int meating;           /* monster is eating timeout */
     int mfading;           /* monster is fading away timeout */
+    uint64_t arc_spls;       /* monster arcane spells */
+    uint64_t clr_spls;      /* monster clerical spells */
     struct mextra *mextra; /* point to mextra struct */
 };
 

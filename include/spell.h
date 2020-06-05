@@ -44,4 +44,35 @@ struct spell {
 #define ZT_BREATH(x) (20 + (x))
 #define ZT_MEGA(x)   (30+(x))
 
+/* Vanilla magic spells */
+#define MGC_PSI_BOLT 0
+#define MGC_CURE_SELF 1
+#define MGC_HASTE_SELF 2
+#define MGC_STUN_YOU 3
+#define MGC_DISAPPEAR 4
+#define MGC_WEAKEN_YOU 5
+#define MGC_DESTRY_ARMR 6
+#define MGC_CURSE_ITEMS 7
+#define MGC_AGGRAVATION 8
+#define MGC_SUMMON_MONS 9
+#define MGC_CLONE_WIZ 10
+#define MGC_DEATH_TOUCH 11
+/* Splice magic spells */
+#define MGC_SONIC_SCREAM 12
+#define MGC_GAS_CLOUD 13
+#define MGC_LAST MGC_GAS_CLOUD
+
+/* Vanilla clerical spells */
+#define CLC_OPEN_WOUNDS 0
+#define CLC_CURE_SELF 1
+#define CLC_CONFUSE_YOU 2
+#define CLC_PARALYZE 3
+#define CLC_BLIND_YOU 4
+#define CLC_INSECTS 5
+#define CLC_CURSE_ITEMS 6
+#define CLC_LIGHTNING 7
+#define CLC_FIRE_PILLAR 8
+#define CLC_GEYSER 9
+#define CLC_LAST CLC_GEYSER
+
 #endif /* SPELL_H */
