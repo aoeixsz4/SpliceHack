@@ -49,7 +49,6 @@ static const struct spellset {
         { 0, 0 }
     };
 
-static void FDECL(m_learn_spell, (struct monst *, int, BOOLEAN_P));
 static int FDECL(choose_monster_spell, (struct monst *, BOOLEAN_P));
 static void FDECL(m_learn_spell_list, (struct monst *, const struct spellset *, BOOLEAN_P));
 static void FDECL(cursetxt, (struct monst *, BOOLEAN_P));
@@ -65,7 +64,7 @@ static void FDECL(ucast_cleric_spell,(struct monst *,struct monst *,int,int));
 
 extern const char *const flash_types[]; /* from zap.c */
 
-static void
+void
 m_learn_spell(mtmp, spell_id, arcane)
 struct monst* mtmp;
 int spell_id;
@@ -112,18 +111,17 @@ struct monst* mtmp;
 const struct spellset* spells;
 boolean arcane;
 {
-    while (spells && spells->spell_id && spells->min_level < mtmp->m_lev) {
+    while (spells && spells->spell_id && spells->min_level <= mtmp->m_lev) {
         m_learn_spell(mtmp, spells->spell_id, arcane);
         spells++;
     }
 }
 
 void
-init_mon_spells(mtmp, dam)
+init_mon_spells(mtmp, arcane)
 struct monst* mtmp;
-int dam;
+boolean arcane;
 {
-    boolean arcane = (dam == AD_SPEL);
     const struct spellset *spells = arcane ? mage_spells : cleric_spells;
 
     if (mtmp->minitspell)
@@ -196,8 +194,6 @@ boolean foundyou;
      * attacking casts spells only a small portion of the time that an
      * attacking monster does.
      */
-
-    init_mon_spells(mtmp, mattk->adtyp);
 
     if ((mattk->adtyp == AD_SPEL || mattk->adtyp == AD_CLRC) && ml) {
         int cnt = 40;
@@ -839,9 +835,6 @@ unsigned int adtyp;
 int spellnum;
 {
     if (adtyp == AD_SPEL) {
-        /* gas clouds on water level */
-        if (Is_waterlevel(&u.uz) && spellnum == MGC_GAS_CLOUD)
-            return TRUE;
       	/* haste self when already fast */
       	if (mtmp->permspeed == MFAST && spellnum == SPE_HASTE_SELF)
       	    return TRUE;
@@ -922,9 +915,6 @@ int spellnum;
         if (mtmp->mpeaceful
             && (spellnum == SPE_AGGRAVATION || spellnum == SPE_SUMMON_NASTIES
                 || spellnum == SPE_DOUBLE_TROUBLE || spellnum == SPE_TURN_UNDEAD))
-            return TRUE;
-        /* gas clouds on water level */
-        if (Is_waterlevel(&u.uz) && spellnum == MGC_GAS_CLOUD)
             return TRUE;
         /* haste self when already fast */
         if (mtmp->permspeed == MFAST && spellnum == SPE_HASTE_SELF)
@@ -1022,8 +1012,6 @@ castmm(mtmp, mdef, mattk)
    	int	dmg, ml = mtmp->m_lev;
    	int ret;
    	int spellnum = 0;
-
-    init_mon_spells(mtmp, mattk->adtyp);
 
    	if ((mattk->adtyp == AD_SPEL || mattk->adtyp == AD_CLRC) && ml) {
    	    int cnt = 40;

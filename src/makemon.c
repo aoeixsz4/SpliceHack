@@ -1558,6 +1558,7 @@ long mmflags;
     boolean byyou = (x == u.ux && y == u.uy);
     boolean allow_minvent = ((mmflags & NO_MINVENT) == 0);
     boolean countbirth = ((mmflags & MM_NOCOUNTBIRTH) == 0);
+    boolean arcane, clerical;
     unsigned gpflags = (mmflags & MM_IGNOREWATER) ? MM_IGNOREWATER : 0;
 
     fakemon = cg.zeromonst;
@@ -1686,6 +1687,21 @@ long mmflags;
     if ((mndx == PM_INCUBUS || mndx == PM_SUCCUBUS) 
         && flags.orientation == SEX_BI && !rn2(2)) {
         mtmp->mcan = 1;
+    }
+
+    /* Set up monster spells. This must take place before the monster
+       changes shape, if it is a shapechanger. */
+    arcane = FALSE;
+    clerical = FALSE;
+    for (ct = 0; ct < NATTK; ct++) {
+        if (!arcane && ptr->mattk[ct].adtyp == AD_SPEL) {
+            init_mon_spells(mtmp, TRUE);
+            arcane = TRUE;
+        } else if (!clerical && ptr->mattk[ct].adtyp == AD_CLRC) {
+            pline("CLER");
+            init_mon_spells(mtmp, FALSE);
+            clerical = TRUE;
+        }
     }
 
     /* mounting */

@@ -35,6 +35,7 @@ static void FDECL(mon_consume_unstone, (struct monst *, struct obj *,
 static boolean FDECL(cures_stoning, (struct monst *, struct obj *,
                                          BOOLEAN_P));
 static boolean FDECL(mcould_eat_tin, (struct monst *));
+static boolean FDECL(mon_can_understand, (struct monst *, struct obj *));
 static boolean FDECL(muse_unslime, (struct monst *, struct obj *,
                                         struct trap *, BOOLEAN_P));
 static int FDECL(cures_sliming, (struct monst *, struct obj *));
@@ -2141,6 +2142,7 @@ struct monst *mtmp;
 #define MUSE_WISH 15
 #define MUSE_BAG 16
 #define MUSE_CANDLE 17
+#define MUSE_SPELLBOOK 18
 
 boolean
 find_misc(mtmp)
@@ -2244,6 +2246,17 @@ struct monst *mtmp;
                 || (u.twoweap && canletgo(uswapwep, "")))) {
             g.m.misc = obj;
             g.m.has_misc = MUSE_BULLWHIP;
+        }
+        /* Note: Monsters will only attempt to learn a spell if their level
+           is twice that of the spell's level minus two. */
+        nomore(MUSE_SPELLBOOK);
+        if (obj->oclass == SPBOOK_CLASS 
+            && (mtmp->minitspell || likes_magic(mtmp->data)) && mtmp->mcansee
+            && !m_knows_spell(mtmp, obj->otyp, TRUE) 
+            && !m_knows_spell(mtmp, obj->otyp, FALSE)
+            && mon_can_understand(mtmp, obj)) {
+                g.m.misc = obj;
+                g.m.has_misc = MUSE_SPELLBOOK;
         }
         /* Note: peaceful/tame monsters won't make themselves
          * invisible unless you can see them.  Not really right, but...
@@ -2576,6 +2589,17 @@ struct monst *mtmp;
         if (!grow_up(mtmp, (struct monst *) 0))
             return 1;
         /* grew into genocided monster */
+        return 2;
+    case MUSE_SPELLBOOK:
+        if (canseemon(mtmp)) {
+            pline("%s reads a %s.", Monnam(mtmp), xname(otmp));
+        } else if (!Deaf) {
+            You_hear("a dry rustling.");
+        }
+        if (!strcmp(OBJ_DESCR(objects[otmp->otyp]), "haunted") && !Deaf) {
+            You_hear("a horrid moan!");
+        }
+        m_learn_spell(mtmp, otmp->otyp, objects[otmp->otyp].oc_skill != P_CLERIC_SPELL);
         return 2;
     case MUSE_WAN_MAKE_INVISIBLE:
     case MUSE_POT_INVISIBILITY:
@@ -2994,6 +3018,8 @@ struct obj *obj;
         if (typ == EGG)
             return (boolean) touch_petrifies(&mons[obj->corpsenm]);
         break;
+    case SPBOOK_CLASS:
+        return likes_magic(mon->data) || mon->minitspell;
     default:
         break;
     }
@@ -3349,6 +3375,14 @@ boolean by_you;
     } /* MUSE */
 
     return FALSE;
+}
+
+static boolean
+mon_can_understand(mon, obj) 
+struct monst *mon;
+struct obj *obj;
+{
+    return objects[obj->otyp].oc_cost / 100 * 2 - 2 <= mon->m_lev;
 }
 
 /* mon uses an item--selected by caller--to burn away incipient slime */
