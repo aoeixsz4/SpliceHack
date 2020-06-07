@@ -13,46 +13,43 @@ static const struct spellset {
     int spell_id;
     int min_level;
 } mage_spells[] = {
-        { MGC_PSI_BOLT, 1 },
-        { MGC_CURE_SELF, 2 },
-        { MGC_HASTE_SELF, 3 },
-        { MGC_STUN_YOU, 4 },
-        { MGC_DISAPPEAR, 5 },
-        { MGC_WEAKEN_YOU, 7 },
-        { MGC_DESTRY_ARMR, 9 },
-        { MGC_CURSE_ITEMS, 11 },
-        { MGC_AGGRAVATION, 14 },
-        { MGC_SUMMON_MONS, 16 },
-        { MGC_DEATH_TOUCH, 21 },
+        { SPE_PSI_BOLT, 1 },
+        { SPE_HEALING, 2 },
+        { SPE_HASTE_SELF, 3 },
+        { SPE_STUN, 4 },
+        { SPE_INVISIBILITY, 5 },
+        { SPE_DRAIN_STRENGTH, 7 },
+        { SPE_DESTROY_ARMOR, 9 },
+        { SPE_CURSE_ITEMS, 11 },
+        { SPE_AGGRAVATION, 14 },
+        { SPE_SUMMON_NASTIES, 16 },
+        { SPE_FINGER_OF_DEATH, 21 },
         { 0, 0 }
     },
     cleric_spells[] = {
-        { CLC_OPEN_WOUNDS, 1 },
-        { CLC_CURE_SELF, 2 },
-        { CLC_CONFUSE_YOU, 3 },
-        { CLC_PARALYZE, 5 },
-        { CLC_BLIND_YOU, 6 },
-        { CLC_INSECTS, 9 },
-        { CLC_CURSE_ITEMS, 10 },
-        { CLC_LIGHTNING, 12 },
-        { CLC_FIRE_PILLAR, 13 },
-        { CLC_GEYSER, 14 },
+        { SPE_OPEN_WOUNDS, 1 },
+        { SPE_HEALING, 2 },
+        { SPE_CONFUSION, 3 },
+        { SPE_PARALYZE, 5 },
+        { SPE_BLINDNESS, 6 },
+        { SPE_INSECT_SWARM, 9 },
+        { SPE_CURSE_ITEMS, 10 },
+        { SPE_LIGHTNING, 12 },
+        { SPE_FLAME_PILLAR, 13 },
+        { SPE_GEYSER, 14 },
         { 0, 0 }
     },
     rodney_spells[] = {
-        { MGC_CLONE_WIZ, 19 },
-        { MGC_CALL_UNDEAD, 19 },
-        { MGC_SONIC_SCREAM, 19 },
+        { SPE_DOUBLE_TROUBLE, 19 },
+        { SPE_TURN_UNDEAD, 19 },
         { 0, 0 }
     },
     undead_mage_spells[] = {
-        { MGC_GAS_CLOUD, 7 },
-        { MGC_CALL_UNDEAD, 11 },
+        { SPE_TURN_UNDEAD, 11 },
         { 0, 0 }
     };
 
 static void FDECL(m_learn_spell, (struct monst *, int, BOOLEAN_P));
-static boolean FDECL(m_knows_spell, (struct monst *, int, BOOLEAN_P));
 static int FDECL(choose_monster_spell, (struct monst *, BOOLEAN_P));
 static void FDECL(m_learn_spell_list, (struct monst *, const struct spellset *, BOOLEAN_P));
 static void FDECL(cursetxt, (struct monst *, BOOLEAN_P));
@@ -80,7 +77,6 @@ boolean arcane;
         mtmp->clr_spls |= ((uint64_t)1 << spell_id);
 }
 
-static
 boolean
 m_knows_spell(mtmp, spell_id, arcane)
 struct monst *mtmp;
@@ -98,16 +94,15 @@ choose_monster_spell(mtmp, arcane)
 struct monst* mtmp;
 boolean arcane;
 {
-    int final_spell = (arcane ? MGC_LAST : CLC_LAST) + 1;
     int tmp, tries = 0;
     do {
-        tmp = rn2(final_spell);
+        tmp = SPE_DIG + rn2(SPE_BLANK_PAPER - SPE_DIG);
         if (m_knows_spell(mtmp, tmp, arcane)) {
             return tmp;
         }
         tries++;
     } while (tries < 50);
-    return 0;
+    return arcane ? SPE_PSI_BOLT : SPE_OPEN_WOUNDS;
 }
 
 static
@@ -117,7 +112,7 @@ struct monst* mtmp;
 const struct spellset* spells;
 boolean arcane;
 {
-    while (spells && spells->min_level < mtmp->m_lev) {
+    while (spells && spells->spell_id && spells->min_level < mtmp->m_lev) {
         m_learn_spell(mtmp, spells->spell_id, arcane);
         spells++;
     }
@@ -422,7 +417,7 @@ int spellnum;
     }
 
     switch (spellnum) {
-    case MGC_DEATH_TOUCH:
+    case SPE_FINGER_OF_DEATH:
         pline("Oh no, %s's using the touch of death!", mhe(mtmp));
         if (nonliving(g.youmonst.data) || is_demon(g.youmonst.data)) {
             You("seem no deader than before.");
@@ -441,7 +436,7 @@ int spellnum;
         }
         dmg = 0;
         break;
-    case MGC_CLONE_WIZ:
+    case SPE_DOUBLE_TROUBLE:
         if (mtmp->iswiz && g.context.no_of_wizards == 1) {
             pline("Double Trouble...");
             clonewiz();
@@ -449,7 +444,7 @@ int spellnum;
         } else
             impossible("bad wizard cloning?");
         break;
-    case MGC_SUMMON_MONS: {
+    case SPE_SUMMON_NASTIES: {
         int count;
 
         count = nasty(mtmp); /* summon something nasty */
@@ -472,7 +467,7 @@ int spellnum;
         dmg = 0;
         break;
     }
-    case MGC_CALL_UNDEAD:
+    case SPE_TURN_UNDEAD:
         {
             coord mm;
             if (Invis && !perceives(mtmp->data)) {
@@ -482,6 +477,8 @@ int spellnum;
                 mm.x = u.ux;   
                 mm.y = u.uy; 
             }
+            if (canseemon(mtmp))
+                pline("%s turns undead!", Monnam(mtmp));
             if (!Blind)
                 pline("Undead creatures are called forth from the grave!");   
             else
@@ -490,17 +487,17 @@ int spellnum;
         }
         dmg = 0;   
         break;   
-    case MGC_AGGRAVATION:
+    case SPE_AGGRAVATION:
         You_feel("that monsters are aware of your presence.");
         aggravate();
         dmg = 0;
         break;
-    case MGC_CURSE_ITEMS:
+    case SPE_CURSE_ITEMS:
         You_feel("as if you need some help.");
         rndcurse();
         dmg = 0;
         break;
-    case MGC_DESTRY_ARMR:
+    case SPE_DESTROY_ARMOR:
         if (Antimagic) {
             shieldeff(u.ux, u.uy);
             pline("A field of force surrounds you!");
@@ -509,7 +506,7 @@ int spellnum;
         }
         dmg = 0;
         break;
-    case MGC_WEAKEN_YOU: /* drain strength */
+    case SPE_DRAIN_STRENGTH: /* drain strength */
         if (Antimagic) {
             shieldeff(u.ux, u.uy);
             You_feel("momentarily weakened.");
@@ -524,7 +521,7 @@ int spellnum;
         }
         dmg = 0;
         break;
-    case MGC_DISAPPEAR: /* makes self invisible */
+    case SPE_INVISIBILITY: /* makes self invisible */
         if (!mtmp->minvis && !mtmp->invis_blkd) {
             if (canseemon(mtmp))
                 pline("%s suddenly %s!", Monnam(mtmp),
@@ -536,7 +533,7 @@ int spellnum;
         } else
             impossible("no reason for monster to cast disappear spell?");
         break;
-    case MGC_STUN_YOU:
+    case SPE_STUN:
         if (Antimagic || Free_action) {
             shieldeff(u.ux, u.uy);
             if (!Stunned)
@@ -551,31 +548,14 @@ int spellnum;
         }
         dmg = 0;
         break;
-    case MGC_HASTE_SELF:
+    case SPE_HASTE_SELF:
         mon_adjust_speed(mtmp, 1, (struct obj *) 0);
         dmg = 0;
         break;
-    case MGC_CURE_SELF:
+    case SPE_HEALING:
         dmg = m_cure_self(mtmp, dmg);
         break;
-    case MGC_SONIC_SCREAM:
-        if (!Deaf) {
-            pline("A deafening screech rips through the air around you!");
-            dmg = d(4, 6);
-            if (Half_spell_damage)
-                dmg = (dmg + 1) / 2;
-        } else {
-            You_feel("a brief hum.");
-        }
-        break;
-    case MGC_GAS_CLOUD:
-        if (!Blinded) {
-            pline("A noxious cloud swirls around you!");
-        }
-        create_gas_cloud(u.ux, u.uy, 1, min(dmg + 1, 6));
-        dmg = 0;
-        break;
-    case MGC_PSI_BOLT:
+    case SPE_PSI_BOLT:
         /* prior to 3.4.0 Antimagic was setting the damage to 1--this
            made the spell virtually harmless to players with magic res. */
         if (Antimagic) {
@@ -614,7 +594,7 @@ int spellnum;
     }
 
     switch (spellnum) {
-    case CLC_GEYSER:
+    case SPE_GEYSER:
         /* this is physical damage (force not heat),
          * not magical damage or fire damage
          */
@@ -623,7 +603,7 @@ int spellnum;
         if (Half_physical_damage)
             dmg = (dmg + 1) / 2;
         break;
-    case CLC_FIRE_PILLAR:
+    case SPE_FLAME_PILLAR:
         pline("A pillar of fire strikes all around you!");
         if (Fire_resistance) {
             shieldeff(u.ux, u.uy);
@@ -639,7 +619,7 @@ int spellnum;
         destroy_item(SPBOOK_CLASS, AD_FIRE);
         (void) burn_floor_objects(u.ux, u.uy, TRUE, FALSE);
         break;
-    case CLC_LIGHTNING: {
+    case SPE_LIGHTNING: {
         boolean reflects;
 
         pline("A bolt of lightning strikes down at you from above!");
@@ -658,12 +638,12 @@ int spellnum;
         (void) flashburn((long) rnd(100));
         break;
     }
-    case CLC_CURSE_ITEMS:
+    case SPE_CURSE_ITEMS:
         You_feel("as if you need some help.");
         rndcurse();
         dmg = 0;
         break;
-    case CLC_INSECTS: {
+    case SPE_INSECT_SWARM: {
         /* Try for insects, and if there are none
            left, go for (sticks to) snakes.  -3. */
         struct permonst *pm = mkclass(S_ANT, 0);
@@ -741,7 +721,7 @@ int spellnum;
         dmg = 0;
         break;
     }
-    case CLC_BLIND_YOU:
+    case SPE_BLINDNESS:
         /* note: resists_blnd() doesn't apply here */
         if (!Blinded) {
             int num_eyes = eyecount(g.youmonst.data);
@@ -755,7 +735,7 @@ int spellnum;
         } else
             impossible("no reason for monster to cast blindness spell?");
         break;
-    case CLC_PARALYZE:
+    case SPE_PARALYZE:
         if (Antimagic || Free_action) {
             shieldeff(u.ux, u.uy);
             if (g.multi >= 0)
@@ -774,7 +754,7 @@ int spellnum;
         g.nomovemsg = 0;
         dmg = 0;
         break;
-    case CLC_CONFUSE_YOU:
+    case SPE_CONFUSION:
         if (Antimagic) {
             shieldeff(u.ux, u.uy);
             You_feel("momentarily dizzy.");
@@ -792,10 +772,10 @@ int spellnum;
         }
         dmg = 0;
         break;
-    case CLC_CURE_SELF:
+    case SPE_HEALING:
         dmg = m_cure_self(mtmp, dmg);
         break;
-    case CLC_OPEN_WOUNDS:
+    case SPE_OPEN_WOUNDS:
         if (Antimagic) {
             shieldeff(u.ux, u.uy);
             dmg = (dmg + 1) / 2;
@@ -827,21 +807,21 @@ int spellnum;
 {
     if (adtyp == AD_SPEL) {
         switch (spellnum) {
-        case MGC_CLONE_WIZ:
-        case MGC_SUMMON_MONS:
-        case MGC_CALL_UNDEAD:
-        case MGC_AGGRAVATION:
-        case MGC_DISAPPEAR:
-        case MGC_HASTE_SELF:
-        case MGC_CURE_SELF:
+        case SPE_DOUBLE_TROUBLE:
+        case SPE_SUMMON_NASTIES:
+        case SPE_TURN_UNDEAD:
+        case SPE_AGGRAVATION:
+        case SPE_INVISIBILITY:
+        case SPE_HASTE_SELF:
+        case SPE_HEALING:
             return TRUE;
         default:
             break;
         }
     } else if (adtyp == AD_CLRC) {
         switch (spellnum) {
-        case CLC_INSECTS:
-        case CLC_CURE_SELF:
+        case SPE_INSECT_SWARM:
+        case SPE_HEALING:
             return TRUE;
         default:
             break;
@@ -863,28 +843,28 @@ int spellnum;
         if (Is_waterlevel(&u.uz) && spellnum == MGC_GAS_CLOUD)
             return TRUE;
       	/* haste self when already fast */
-      	if (mtmp->permspeed == MFAST && spellnum == MGC_HASTE_SELF)
+      	if (mtmp->permspeed == MFAST && spellnum == SPE_HASTE_SELF)
       	    return TRUE;
       	/* invisibility when already invisible */
-      	if ((mtmp->minvis || mtmp->invis_blkd) && spellnum == MGC_DISAPPEAR)
+      	if ((mtmp->minvis || mtmp->invis_blkd) && spellnum == SPE_INVISIBILITY)
       	    return TRUE;
       	/* healing when already healed */
-      	if (mtmp->mhp == mtmp->mhpmax && spellnum == MGC_CURE_SELF)
+      	if (mtmp->mhp == mtmp->mhpmax && spellnum == SPE_HEALING)
       	    return TRUE;
       	/* don't summon monsters if it doesn't think you're around */
       	if ((!mtmp->iswiz || g.context.no_of_wizards > 1)
-      						&& spellnum == MGC_CLONE_WIZ)
+      						&& spellnum == SPE_DOUBLE_TROUBLE)
       	    return TRUE;
       #ifndef TAME_SUMMONING
-             if (spellnum == MGC_SUMMON_MONS || spellnum == MGC_CALL_UNDEAD)
+             if (spellnum == SPE_SUMMON_NASTIES || spellnum == SPE_TURN_UNDEAD)
       	    return TRUE;
       #endif
      } else if (adtyp == AD_CLRC) {
       	/* healing when already healed */
-      	if (mtmp->mhp == mtmp->mhpmax && spellnum == CLC_CURE_SELF)
+      	if (mtmp->mhp == mtmp->mhpmax && spellnum == SPE_HEALING)
       	    return TRUE;
       	/* blindness spell on blinded player */
-      	if ((!haseyes(mdef->data) || mdef->mblinded) && spellnum == CLC_BLIND_YOU)
+      	if ((!haseyes(mdef->data) || mdef->mblinded) && spellnum == SPE_BLINDNESS)
       	    return TRUE;
         }
     return FALSE;
@@ -898,24 +878,24 @@ int spellnum;
 {
     if (adtyp == AD_SPEL) {
       	/* aggravate monsters, etc. won't be cast by peaceful monsters */
-      	if (spellnum == MGC_CLONE_WIZ)
+      	if (spellnum == SPE_DOUBLE_TROUBLE)
       	    return TRUE;
       	/* haste self when already fast */
-      	if (Fast && spellnum == MGC_HASTE_SELF)
+      	if (Fast && spellnum == SPE_HASTE_SELF)
       	    return TRUE;
       	/* invisibility when already invisible */
-      	if ((HInvis & INTRINSIC) && spellnum == MGC_DISAPPEAR)
+      	if ((HInvis & INTRINSIC) && spellnum == SPE_INVISIBILITY)
       	    return TRUE;
       	/* healing when already healed */
-      	if (u.mh == u.mhmax && spellnum == MGC_CURE_SELF)
+      	if (u.mh == u.mhmax && spellnum == SPE_HEALING)
       	    return TRUE;
       #ifndef TAME_SUMMONING
-            if (spellnum == MGC_SUMMON_MONS || spellnum == MGC_CALL_UNDEAD)
+            if (spellnum == SPE_SUMMON_NASTIES || spellnum == SPE_TURN_UNDEAD)
       	    return TRUE;
       #endif
     } else if (adtyp == AD_CLRC) {
       	/* healing when already healed */
-      	if (u.mh == u.mhmax && spellnum == MGC_CURE_SELF)
+      	if (u.mh == u.mhmax && spellnum == SPE_HEALING)
       	    return TRUE;
     }
     return FALSE;
@@ -940,38 +920,38 @@ int spellnum;
     if (adtyp == AD_SPEL) {
         /* aggravate monsters, etc. won't be cast by peaceful monsters */
         if (mtmp->mpeaceful
-            && (spellnum == MGC_AGGRAVATION || spellnum == MGC_SUMMON_MONS
-                || spellnum == MGC_CLONE_WIZ || spellnum == MGC_CALL_UNDEAD))
+            && (spellnum == SPE_AGGRAVATION || spellnum == SPE_SUMMON_NASTIES
+                || spellnum == SPE_DOUBLE_TROUBLE || spellnum == SPE_TURN_UNDEAD))
             return TRUE;
         /* gas clouds on water level */
         if (Is_waterlevel(&u.uz) && spellnum == MGC_GAS_CLOUD)
             return TRUE;
         /* haste self when already fast */
-        if (mtmp->permspeed == MFAST && spellnum == MGC_HASTE_SELF)
+        if (mtmp->permspeed == MFAST && spellnum == SPE_HASTE_SELF)
             return TRUE;
         /* invisibility when already invisible */
-        if ((mtmp->minvis || mtmp->invis_blkd) && spellnum == MGC_DISAPPEAR)
+        if ((mtmp->minvis || mtmp->invis_blkd) && spellnum == SPE_INVISIBILITY)
             return TRUE;
         /* peaceful monster won't cast invisibility if you can't see
            invisible,
            same as when monsters drink potions of invisibility.  This doesn't
            really make a lot of sense, but lets the player avoid hitting
            peaceful monsters by mistake */
-        if (mtmp->mpeaceful && !See_invisible && spellnum == MGC_DISAPPEAR)
+        if (mtmp->mpeaceful && !See_invisible && spellnum == SPE_INVISIBILITY)
             return TRUE;
         /* healing when already healed */
-        if (mtmp->mhp == mtmp->mhpmax && spellnum == MGC_CURE_SELF)
+        if (mtmp->mhp == mtmp->mhpmax && spellnum == SPE_HEALING)
             return TRUE;
         /* don't summon monsters if it doesn't think you're around */
-        if (!mcouldseeu && (spellnum == MGC_SUMMON_MONS
-                            || spellnum == MGC_CALL_UNDEAD
-                            || (!mtmp->iswiz && spellnum == MGC_CLONE_WIZ)))
+        if (!mcouldseeu && (spellnum == SPE_SUMMON_NASTIES
+                            || spellnum == SPE_TURN_UNDEAD
+                            || (!mtmp->iswiz && spellnum == SPE_DOUBLE_TROUBLE)))
             return TRUE;
         if ((!mtmp->iswiz || g.context.no_of_wizards > 1)
-            && spellnum == MGC_CLONE_WIZ)
+            && spellnum == SPE_DOUBLE_TROUBLE)
             return TRUE;
         /* aggravation (global wakeup) when everyone is already active */
-        if (spellnum == MGC_AGGRAVATION) {
+        if (spellnum == SPE_AGGRAVATION) {
             /* if nothing needs to be awakened then this spell is useless
                but caster might not realize that [chance to pick it then
                must be very small otherwise caller's many retry attempts
@@ -982,16 +962,16 @@ int spellnum;
     } else if (adtyp == AD_CLRC) {
         /* summon insects/sticks to snakes won't be cast by peaceful monsters
          */
-        if (mtmp->mpeaceful && spellnum == CLC_INSECTS)
+        if (mtmp->mpeaceful && spellnum == SPE_INSECT_SWARM)
             return TRUE;
         /* healing when already healed */
-        if (mtmp->mhp == mtmp->mhpmax && spellnum == CLC_CURE_SELF)
+        if (mtmp->mhp == mtmp->mhpmax && spellnum == SPE_HEALING)
             return TRUE;
         /* don't summon insects if it doesn't think you're around */
-        if (!mcouldseeu && spellnum == CLC_INSECTS)
+        if (!mcouldseeu && spellnum == SPE_INSECT_SWARM)
             return TRUE;
         /* blindness spell on blinded player */
-        if (Blinded && spellnum == CLC_BLIND_YOU)
+        if (Blinded && spellnum == SPE_BLINDNESS)
             return TRUE;
     }
     return FALSE;
@@ -1176,9 +1156,9 @@ castmm(mtmp, mdef, mattk)
          		/*victim so as to aggravate you*/
    	        if (is_undirected_spell(mattk->adtyp, spellnum)
                 && (mattk->adtyp != AD_SPEL
-                || (spellnum != MGC_AGGRAVATION &&
-                  spellnum != MGC_SUMMON_MONS &&
-                  spellnum != MGC_CALL_UNDEAD))) {
+                || (spellnum != SPE_AGGRAVATION &&
+                  spellnum != SPE_SUMMON_NASTIES &&
+                  spellnum != SPE_TURN_UNDEAD))) {
      		    if (mattk->adtyp == AD_SPEL)
      		        cast_wizard_spell(mtmp, dmg, spellnum);
      		    else
@@ -1235,7 +1215,7 @@ castum(mtmp, mattk)
    	    }
    	}
 
-   	if (spellnum == MGC_AGGRAVATION && !mtmp) {
+   	if (spellnum == SPE_AGGRAVATION && !mtmp) {
    	    /* choose a random monster on the level */
    	    int j = 0, k = 0;
    	    for(mtmp = fmon; mtmp; mtmp = mtmp->nmon)
@@ -1378,7 +1358,7 @@ int spellnum;
     }
 
      switch (spellnum) {
-     case MGC_DEATH_TOUCH:
+     case SPE_FINGER_OF_DEATH:
        	if (!mtmp || mtmp->mhp < 1) {
        	    impossible("touch of death with no mtmp");
        	    return;
@@ -1415,8 +1395,8 @@ int spellnum;
        	}
        	dmg = 0;
        	break;
-    case MGC_CALL_UNDEAD:
-    case MGC_SUMMON_MONS:
+    case SPE_TURN_UNDEAD:
+    case SPE_SUMMON_NASTIES:
     {
      	int count = 0;
       register struct monst *mpet;
@@ -1481,7 +1461,7 @@ int spellnum;
      	dmg = 0;
      	break;
       }
-    case MGC_AGGRAVATION:
+    case SPE_AGGRAVATION:
        	if (!mtmp || mtmp->mhp < 1) {
        	    You_feel("lonely.");
        	    return;
@@ -1489,7 +1469,7 @@ int spellnum;
        	you_aggravate(mtmp);
        	dmg = 0;
        	break;
-    case MGC_CURSE_ITEMS:
+    case SPE_CURSE_ITEMS:
        	if (!mtmp || mtmp->mhp < 1) {
        	    impossible("curse spell with no mtmp");
        	    return;
@@ -1499,7 +1479,7 @@ int spellnum;
        	mrndcurse(mtmp);
        	dmg = 0;
        	break;
-    case MGC_DESTRY_ARMR:
+    case SPE_DESTROY_ARMOR:
        	if (!mtmp || mtmp->mhp < 1) {
        	    impossible("destroy spell with no mtmp");
        	    return;
@@ -1545,7 +1525,7 @@ int spellnum;
         }
        	dmg = 0;
        	break;
-    case MGC_WEAKEN_YOU:		/* drain strength */
+    case SPE_DRAIN_STRENGTH:		/* drain strength */
        	if (!mtmp || mtmp->mhp < 1) {
        	    impossible("weaken spell with no mtmp");
        	    return;
@@ -1569,7 +1549,7 @@ int spellnum;
        	}
        	dmg = 0;
        	break;
-    case MGC_DISAPPEAR:		/* makes self invisible */
+    case SPE_INVISIBILITY:		/* makes self invisible */
         if (!yours) {
        	    impossible("ucast disappear but not yours?");
        	    return;
@@ -1581,7 +1561,7 @@ int spellnum;
        	} else
        	    impossible("no reason for player to cast disappear spell?");
        	break;
-    case MGC_STUN_YOU:
+    case SPE_STUN:
        	if (!mtmp || mtmp->mhp < 1) {
        	    impossible("stun spell with no mtmp");
        	    return;
@@ -1602,7 +1582,7 @@ int spellnum;
        	}
        	dmg = 0;
        	break;
-    case MGC_HASTE_SELF:
+    case SPE_HASTE_SELF:
         if (!yours) {
        	    impossible("ucast haste but not yours?");
        	    return;
@@ -1612,7 +1592,7 @@ int spellnum;
  	      HFast |= INTRINSIC;
  	      dmg = 0;
  	      break;
-    case MGC_CURE_SELF:
+    case SPE_HEALING:
         if (!yours)
             impossible("ucast healing but not yours?");
         else if (u.mh < u.mhmax) {
@@ -1623,33 +1603,7 @@ int spellnum;
        	    dmg = 0;
         }
         break;
-    case MGC_SONIC_SCREAM:
-        if (!Deaf) {
-            pline("A deafening screech rips through the air around %s!",
-                mon_nam(mtmp));
-        } else {
-            You_feel("a brief hum.");
-        }
-
-        if (!resists_sonic(mtmp)) {
-            shieldeff(mtmp->mx, mtmp->my);
-            pline("%s seems unperturbed.", Monnam(mtmp));
-            break;
-        }
-        dmg = d(4, 6);
-        if (resist(mtmp, 0, 0, FALSE)) {
-            shieldeff(mtmp->mx, mtmp->my);
-            dmg = (dmg + 1) / 2;
-        }
-        break;
-    case MGC_GAS_CLOUD:
-        if (!Blinded && canseemon(mtmp)) {
-            pline("A noxious cloud swirls around %s!", mon_nam(mtmp));
-        }
-        create_gas_cloud(mtmp->mx, mtmp->my, 1, min(dmg + 1, 6));
-        dmg = 0;
-        break;
-    case MGC_PSI_BOLT:
+    case SPE_PSI_BOLT:
        	if (!mtmp || mtmp->mhp < 1) {
        	    impossible("psibolt spell with no mtmp");
        	    return;
@@ -1699,7 +1653,7 @@ int spellnum;
     }
 
     switch (spellnum) {
-    case CLC_GEYSER:
+    case SPE_GEYSER:
        	/* this is physical damage, not magical damage */
        	if (!mtmp || mtmp->mhp < 1) {
        	    impossible("geyser spell with no mtmp");
@@ -1709,7 +1663,7 @@ int spellnum;
        	    pline("A sudden geyser slams into %s from nowhere!", mon_nam(mtmp));
        	dmg = d(8, 6);
        	break;
-           case CLC_FIRE_PILLAR:
+           case SPE_FLAME_PILLAR:
        	if (!mtmp || mtmp->mhp < 1) {
        	    impossible("firepillar spell with no mtmp");
        	    return;
@@ -1727,7 +1681,7 @@ int spellnum;
        	destroy_mitem(mtmp, SPBOOK_CLASS, AD_FIRE);
        	(void) burn_floor_objects(mtmp->mx, mtmp->my, TRUE, FALSE);
        	break;
-    case CLC_LIGHTNING:
+    case SPE_LIGHTNING:
     {
        	boolean reflects;
        	if (!mtmp || mtmp->mhp < 1) {
@@ -1750,7 +1704,7 @@ int spellnum;
        	destroy_mitem(mtmp, RING_CLASS, AD_ELEC);
        	break;
     }
-    case CLC_CURSE_ITEMS:
+    case SPE_CURSE_ITEMS:
        	if (!mtmp || mtmp->mhp < 1) {
        	    impossible("curse spell with no mtmp");
        	    return;
@@ -1760,7 +1714,7 @@ int spellnum;
        	mrndcurse(mtmp);
        	dmg = 0;
        	break;
-    case CLC_INSECTS:
+    case SPE_INSECT_SWARM:
     {
          	/* Try for insects, and if there are none
          	   left, go for (sticks to) snakes.  -3. */
@@ -1819,7 +1773,7 @@ int spellnum;
          	dmg = 0;
          	break;
       }
-      case CLC_BLIND_YOU:
+      case SPE_BLINDNESS:
           if (!mtmp || mtmp->mhp < 1) {
          	    impossible("blindness spell with no mtmp");
          	    return;
@@ -1840,7 +1794,7 @@ int spellnum;
          	} else
          	    impossible("no reason for monster to cast blindness spell?");
          	break;
-    case CLC_PARALYZE:
+    case SPE_PARALYZE:
          if (!mtmp || mtmp->mhp < 1) {
        	    impossible("paralysis spell with no mtmp");
        	    return;
@@ -1858,7 +1812,7 @@ int spellnum;
        	}
        	dmg = 0;
        	break;
-     case CLC_CONFUSE_YOU:
+     case SPE_CONFUSION:
         if (!mtmp || mtmp->mhp < 1) {
        	    impossible("confusion spell with no mtmp");
        	    return;
@@ -1875,7 +1829,7 @@ int spellnum;
        	}
        	dmg = 0;
        	break;
-    case CLC_CURE_SELF:
+    case SPE_HEALING:
        	if (u.mh < u.mhmax) {
        	    You("feel better.");
        	    /* note: player healing does 6d4; this used to do 1d8 */
@@ -1885,7 +1839,7 @@ int spellnum;
        	    dmg = 0;
        	}
        	break;
-    case CLC_OPEN_WOUNDS:
+    case SPE_OPEN_WOUNDS:
         if (!mtmp || mtmp->mhp < 1) {
        	    impossible("wound spell with no mtmp");
        	    return;

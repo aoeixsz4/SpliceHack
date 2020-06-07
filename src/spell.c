@@ -406,7 +406,8 @@ learn(VOID_ARGS)
             break;
 
     if (i == MAXSPELL) {
-        impossible("Too many spells memorized!");
+        You("have already memorized the maximum number of spells!");
+        /* impossible("Too many spells memorized!"); */
     } else if (spellid(i) == booktype) {
         /* normal book can be read and re-read a total of 4 times */
         if (book->spestudied > MAX_SPELL_STUDY) {
@@ -489,6 +490,11 @@ register struct obj *spellbook;
             fall_asleep(-dullbook, TRUE);
             return 1;
         }
+    }
+
+    if (!strcmp(OBJ_DESCR(objects[booktype]), "haunted") && !Deaf) {
+        pline("The book utters a horrid moan when you open it.");
+        aggravate();
     }
 
     if (g.context.spbook.delay && !confused
@@ -647,8 +653,11 @@ register struct obj *spellbook;
                                    - 2 * objects[booktype].oc_level
                              + ((ublindf && ublindf->otyp == LENSES) ? 2 : 0);
 
-                /* only wizards know if a spell is too difficult */
-                if (Role_if(PM_WIZARD) && read_ability < 20 && !confused) {
+                /* Only wizards know if a spell is too difficult. The
+                   exception is ergodic spellbooks, which by definition
+                   require extra effort on the part of the reader. */
+                if ((Role_if(PM_WIZARD) && read_ability < 20 && !confused)
+                    || (!strcmp(OBJ_DESCR(objects[booktype]), "ergodic"))) {
                     char qbuf[QBUFSZ];
 
                     Sprintf(qbuf,
@@ -1001,7 +1010,7 @@ spelleffects(spell, atme)
 int spell;
 boolean atme;
 {
-    int energy, damage, chance, n, intell;
+    int energy, damage, chance, n, m, intell;
     int otyp, skill, role_skill, res = 0;
     boolean confused = (Confusion != 0);
     boolean physical_damage = FALSE;
@@ -1240,6 +1249,14 @@ boolean atme;
     case SPE_EXTRA_HEALING:
     case SPE_DRAIN_LIFE:
     case SPE_STONE_TO_FLESH:
+    case SPE_PSI_BOLT:
+    case SPE_STUN:
+    case SPE_CONFUSION:
+    case SPE_CURSE_ITEMS:
+    case SPE_DESTROY_ARMOR:
+    case SPE_OPEN_WOUNDS:
+    case SPE_PARALYZE:
+    case SPE_BLINDNESS:
         if (objects[otyp].oc_dir != NODIR) {
             if (otyp == SPE_HEALING || otyp == SPE_EXTRA_HEALING) {
                 /* healing and extra healing are actually potion effects,
@@ -1353,6 +1370,34 @@ boolean atme;
     case SPE_JUMPING:
         if (!jump(max(role_skill, 1)))
             pline1(nothing_happens);
+        break;
+    case SPE_FLAME_PILLAR: {cc.x = u.ux;
+        cc.y = u.uy;
+        if (Underwater) {
+            pline_The("%s around you vaporizes!", hliquid("water"));
+        } else {
+            pline("Where do you want to center the divine fire?");
+            (void) getpos(&cc, TRUE, "the place to smite");
+            explode(cc.x, cc.y, 11, d(8, 6), SPBOOK_CLASS, EXPL_FIERY);
+        }
+        break;
+    }
+    case SPE_AGGRAVATION:
+        You_feel("that monsters are aware of your presence.");
+        aggravate();
+        break;
+    case SPE_DOUBLE_TROUBLE:
+        pline("Double or nothing...");
+        cloneu();
+        break;
+    case SPE_SUMMON_NASTIES:
+        nasty(&g.youmonst);
+        break;
+    case SPE_INSECT_SWARM:
+        m = rnd(7);
+        for (n = 0; n < m; n++) {
+            makemon(mkclass(S_ANT, 0), u.ux, u.uy, NO_MM_FLAGS);
+        }
         break;
     default:
         impossible("Unknown spell %d attempted.", spell);

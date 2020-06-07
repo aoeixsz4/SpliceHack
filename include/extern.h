@@ -1291,6 +1291,7 @@ E boolean FDECL(menuitem_invert_test, (int, unsigned, BOOLEAN_P));
 /* ### mcastu.c ### */
 
 E void FDECL(init_mon_spells, (struct monst *, BOOLEAN_P));
+E boolean FDECL(m_knows_spell, (struct monst *, int, BOOLEAN_P));
 E int FDECL(castmu, (struct monst *, struct attack *, BOOLEAN_P, BOOLEAN_P));
 E int FDECL(buzzmu, (struct monst *, struct attack *));
 E int FDECL(castmm, (struct monst *,struct monst *,struct attack *));

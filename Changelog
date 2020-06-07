@@ -32,11 +32,20 @@ QOL
 
 Monster Spellcasting
 - Monsters have spell lists that vary based on the individual monster.
+- Probing a spellcasting monster will display its spell list.
 - The Wizard of Yendor has an enormous spell list, making him highly unpredictable
   to fight against.
-- Numerous new monster spells have been added:
-  - Call Undead (from SLASH'EM). Call undead has been modified so that it revives
+- New monster spells have been added:
+  - Turn Undead (from SLASH'EM). Call undead has been modified so that it revives
     nearby corpses.
+
+New Items
+- Many monster spells have corresponding spellbooks now. All of these spellbooks
+  have unique tiles and appearances. None of these spellbooks are randomly generated.
+  - Spellbooks with the "Ergodic" appearance will always display a warning that
+    they are difficult to comprehend.
+  - Spellbooks with the "Haunted" appearance will utter a loud wail when
+    opened for reading purposes.
 
 Miscelaneous
 - Kicking a tree has a chance of spawning a serval or (very rarely) a jaguar.

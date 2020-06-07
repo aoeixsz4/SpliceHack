@@ -200,6 +200,167 @@ struct obj *otmp;
             miss(zap_type_text, mtmp);
         learn_it = TRUE;
         break;
+    case SPE_PSI_BOLT:
+        dmg = d(u.ulevel / 2, 6);
+        reveal_invis = TRUE;
+        if (disguised_mimic)
+            seemimic(mtmp);
+        if (resist(mtmp, 0, 0, FALSE)) {
+       	    shieldeff(mtmp->mx, mtmp->my);
+       	    dmg = (dmg + 1) / 2;
+       	} else if (resists_psychic(mtmp)) {
+               dmg = 0;
+           }
+        if (canseemon(mtmp) && dmg > mtmp->mhp && has_head(mtmp->data)) {
+            pline("%s's head explodes!", Monnam(mtmp));
+        } else if (canseemon(mtmp) && dmg) {
+       	    pline("%s winces%s", Monnam(mtmp), (dmg <= 5) ? "." : "!");
+        } else if (canseemon(mtmp)) {
+            pline("%s seems unaffected.", Monnam(mtmp));
+        }
+        mtmp->mhp -= dmg;
+        if (DEADMONSTER(mtmp)) {
+            if (g.m_using)
+                monkilled(mtmp, "", AD_PSYC);
+            else
+                killed(mtmp);
+        }
+        break;
+    case SPE_STUN:
+        if (disguised_mimic)
+            seemimic(mtmp);
+        if (resist(mtmp, 0, 0, FALSE)) {
+            shieldeff(mtmp->mx, mtmp->my);
+            pline("%s seems momentarily disoriented.", Monnam(mtmp));
+        } else if (canseemon(mtmp)) {
+            pline("%s reels...", Monnam(mtmp));
+            mtmp->mstun = 1;
+        }
+        break;
+    case SPE_CONFUSION:
+        if (resist(mtmp, 0, 0, FALSE)) {
+       	    shieldeff(mtmp->mx, mtmp->my);
+       	    if (canseemon(mtmp))
+       	        pline("%s seems momentarily dizzy.", Monnam(mtmp));
+       	} else {
+       	    if (canseemon(mtmp))
+       	        pline("%s seems %sconfused!", Monnam(mtmp),
+       	              mtmp->mconf ? "more " : "");
+       	    mtmp->mconf = 1;
+       	}
+        break;
+    case SPE_DRAIN_STRENGTH:
+        dmg = rnd(max(u.ulevel - 6, 0));
+        if (resist(mtmp, 0, 0, FALSE)) {
+       	    shieldeff(mtmp->mx, mtmp->my);
+       	    pline("%s looks momentarily weakened.", Monnam(mtmp));
+       	} else {
+       	    if (canseemon(mtmp))
+       	        pline("%s suddenly seems weaker!", Monnam(mtmp));
+             /* monsters don't have strength, so drain max hp instead */
+       	    mtmp->mhpmax -= dmg;
+       	    if ((mtmp->mhp -= dmg) <= 0) {
+       	        killed(mtmp);
+            }
+       	}
+        break;
+    case SPE_CURSE_ITEMS:
+        if (canseemon(mtmp))
+       	    You_feel("as though %s needs some help.", mon_nam(mtmp));
+       	mrndcurse(mtmp);
+       	break;
+    case SPE_DESTROY_ARMOR:
+        if (resist(mtmp, 0, 0, FALSE)) {
+       	    shieldeff(mtmp->mx, mtmp->my);
+       	    if (canseemon(mtmp))
+       	        pline("A field of force surrounds %s!",
+       	               mon_nam(mtmp));
+       	} else {
+            register struct obj *otmp2 = some_armor(mtmp);
+            #define oresist_disintegration(obj) \
+ 		(objects[obj->otyp].oc_oprop == DISINT_RES || \
+ 		 obj_resists(obj, 0, 90) || is_quest_artifact(obj))
+       	    if (otmp2 &&
+       	        !oresist_disintegration(otmp2)) {
+       	        pline("%s %s %s!",
+       		      s_suffix(Monnam(mtmp)),
+       		      xname(otmp2),
+       		      is_cloak(otmp2)  ? "crumbles and turns to dust" :
+       		      is_shirt(otmp2)  ? "crumbles into tiny threads" :
+       		      is_helmet(otmp2) ? "turns to dust and is blown away" :
+       		      is_gloves(otmp2) ? "vanish" :
+       		      is_boots(otmp2)  ? "disintegrate" :
+      		      is_shield(otmp2) ? "crumbles away" :
+       		                        "turns to dust"
+       		      );
+           		obj_extract_self(otmp2);
+                if (otmp2->owornmask) {
+                    mtmp->misc_worn_check &= ~otmp2->owornmask;
+                    otmp2->owornmask = 0L;
+                    update_mon_intrinsics(mtmp, otmp2, FALSE, FALSE);
+                    /* give monster a chance to wear other equipment on its next
+                       move instead of waiting until it picks something up */
+                    mtmp->misc_worn_check |= I_SPECIAL;
+                }
+           		obfree(otmp2, (struct obj *)0);
+        	  }
+       	    else if (canseemon(mtmp))
+       	        pline("%s looks itchy.", Monnam(mtmp));
+        }
+        #undef oresist_disintegration
+        break;
+    case SPE_OPEN_WOUNDS:
+        dmg = d((u.ulevel / 2), 6);
+        if (resist(mtmp, 0, 0, FALSE)) {
+       	    shieldeff(mtmp->mx, mtmp->my);
+       	    dmg = (dmg + 1) / 2;
+       	}
+       	/* not canseemon; if you can't see it you don't know it was wounded */
+        if (dmg <= 5)
+            pline("%s looks itchy!", Monnam(mtmp));
+        else if (dmg <= 10)
+            pline("Wounds appear on %s!", mon_nam(mtmp));
+        else if (dmg <= 20)
+            pline("Severe wounds appear on %s!", mon_nam(mtmp));
+        else
+            pline("%s is covered in wounds!", Monnam(mtmp));
+        mtmp->mhp -= dmg;
+        if (DEADMONSTER(mtmp)) {
+            if (g.m_using)
+                monkilled(mtmp, "", AD_PHYS);
+            else
+                killed(mtmp);
+        }
+        break;
+    case SPE_PARALYZE:
+        if (resist(mtmp, 0, 0, FALSE)) {
+       	    shieldeff(mtmp->mx, mtmp->my);
+       	    if (canseemon(mtmp))
+       	        pline("%s stiffens briefly.", Monnam(mtmp));
+       	} else {
+       	    if (canseemon(mtmp))
+       	        pline("%s is frozen in place!", Monnam(mtmp));
+       	    dmg = 4 + u.ulevel;
+       	    paralyze_monst(mtmp, dmg);
+       	}
+       	dmg = 0;
+        break;
+    case SPE_BLINDNESS:
+        if (!mtmp->mblinded &&
+         	    haseyes(mtmp->data)) {
+         	    if (!resists_blnd(mtmp)) {
+         	        int num_eyes = eyecount(mtmp->data);
+         	        pline("Scales cover %s %s!",
+         	          s_suffix(mon_nam(mtmp)),
+         		  (num_eyes == 1) ? "eye" : "eyes");
+
+         		  mtmp->mblinded = 127;
+         	    }
+        } else if (canseemon(mtmp)) {
+            pline("%s seems irritated for a moment.", Monnam(mtmp));
+        }
+        break;
+    case SPE_GEYSER:
     case WAN_WATER:
         You("fire off a powerful jet of water!");
         zap_type_text = "jet of water";
@@ -570,6 +731,9 @@ probe_monster(mtmp)
 struct monst *mtmp;
 {
     struct obj *otmp;
+    char spellbuf[BUFSZ];
+    int i;
+    boolean first = TRUE;
 
     if (!has_mname(mtmp) && !type_is_pname(mtmp->data) &&
         is_human(mtmp->data) && !(mtmp->data->geno & G_UNIQ)) {
@@ -595,6 +759,18 @@ struct monst *mtmp;
     } else {
         pline("%s is not carrying anything%s.", noit_Monnam(mtmp),
               (u.uswallow && mtmp == u.ustuck) ? " besides you" : "");
+    }
+
+    if (mtmp->minitspell) {
+        spellbuf[0] = '\0';
+        pline("%s knows the following spells:", noit_Monnam(mtmp));
+        for (i = SPE_DIG; i < SPE_BLANK_PAPER; i++) {
+            if (m_knows_spell(mtmp, i, TRUE) || m_knows_spell(mtmp, i, FALSE)) {
+                Sprintf(eos(spellbuf), "%s%s", first ? "" : ", ", OBJ_NAME(objects[i]));
+                first = FALSE;
+            }
+        }
+        pline("%s.", upstart(spellbuf));
     }
 }
 
@@ -2236,6 +2412,11 @@ struct obj *obj, *otmp;
                 }
             }
             break;
+        case SPE_OPEN_WOUNDS:
+            if (obj->otyp == CORPSE && cansee(obj->ox, obj->oy)) {
+                pline("Wounds appear on %s.", cxname_singular(obj));
+            }
+            break;
         case WAN_OPENING:
         case SPE_KNOCK:
         case WAN_LOCKING:
@@ -2255,6 +2436,12 @@ struct obj *obj, *otmp;
         case WAN_WATER:
         case SPE_HEALING:
         case SPE_EXTRA_HEALING:
+        case SPE_PSI_BOLT:
+        case SPE_STUN:
+        case SPE_GEYSER:
+        case SPE_DESTROY_ARMOR:
+        case SPE_CURSE_ITEMS:
+        case SPE_DRAIN_STRENGTH:
             res = 0;
             break;
         case SPE_STONE_TO_FLESH:
@@ -2637,6 +2824,74 @@ boolean ordinary;
             exercise(A_STR, FALSE);
         }
         break;
+    case SPE_PSI_BOLT:
+        if (!Psychic_resistance) {
+            pline("Your head aches painfully!");
+            damage = d(3,4);
+        } else {
+            pline("You focus your mental energy.");
+            healup(d(3,4), 0, FALSE, FALSE);
+        }
+        break;
+    case SPE_OPEN_WOUNDS:
+        damage = d(5, 6);
+        pline("Wounds appear all over your body!");
+        break;
+    case SPE_STUN:
+        pline("You%s stun yourself!", Hallucination ? "\'re so cool that" : "");
+        make_stunned((HStun & TIMEOUT) + (long) d(4, 4), FALSE);
+        break;
+    case SPE_CONFUSION:
+        You("strain your brain!");
+        make_confused((HConfusion & TIMEOUT) + (long) u.ulevel, FALSE);
+        break;
+    case SPE_DRAIN_STRENGTH:
+        pline("Your muscles atrophy!");
+        damage = max(u.ulevel - 6, 0);
+        if (Half_spell_damage)
+            damage = (damage + 1) / 2;
+        losestr(rnd(damage));
+        break;
+    case SPE_CURSE_ITEMS:
+        You_feel("as if you need some help.");
+        rndcurse();
+        break;
+    case SPE_DESTROY_ARMOR:
+        if (Antimagic) {
+                shieldeff(u.ux, u.uy);
+                pline("A field of force surrounds you!");
+            } else if (!destroy_arm(some_armor(&g.youmonst))) {
+                Your("skin itches.");
+            }
+        break;
+    case SPE_PARALYZE:
+        if (Antimagic || Free_action) {
+            shieldeff(u.ux, u.uy);
+            if (g.multi >= 0)
+                You("stiffen briefly.");
+            nomul(-1);
+            g.multi_reason = "paralyzed by a self-directed spell";
+        } else {
+            if (g.multi >= 0)
+                You("are frozen in place!");
+            nomul(-(u.ulevel / 2));
+            g.multi_reason = "paralyzed by a self-directed spell";
+        }
+        g.nomovemsg = 0;
+        break;
+    case SPE_BLINDNESS:
+        if (!Blinded) {
+            int num_eyes = eyecount(g.youmonst.data);
+            pline("Scales cover your %s!", (num_eyes == 1)
+                                               ? body_part(EYE)
+                                               : makeplural(body_part(EYE)));
+            make_blinded(Half_spell_damage ? 100L : 200L, FALSE);
+            if (!Blind)
+                Your1(vision_clears);
+        } else {
+            pline("The inside of your eyelids disappear!");
+        }
+        break;
     case WAN_WINDSTORM:
         learn_it = TRUE;
         pline("Whoosh!");
@@ -2700,6 +2955,7 @@ boolean ordinary;
         (void) create_gas_cloud(u.ux, u.uy, 1, 8);
         break;
 
+    case SPE_GEYSER:
     case WAN_WATER:
         learn_it = TRUE;
         if (uwep && uwep->otyp == RUBBER_HOSE)
@@ -3123,6 +3379,13 @@ struct obj *obj; /* wand or spell */
     case WAN_OPENING:
     case SPE_KNOCK:
     case WAN_WINDSTORM:
+    case SPE_PSI_BOLT:
+    case SPE_STUN:
+    case SPE_CONFUSION:
+    case SPE_OPEN_WOUNDS:
+    case SPE_GEYSER:
+    case SPE_PARALYZE:
+    case SPE_BLINDNESS:
         (void) bhitm(u.usteed, obj);
         steedhit = TRUE;
         break;
@@ -3260,6 +3523,7 @@ struct obj *obj; /* wand or spell */
         }
         break;
     case WAN_WATER:
+    case SPE_GEYSER:
         if (u.dz > 0) {
             pline("Rain? Here?");
         }
