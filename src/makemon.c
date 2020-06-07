@@ -1698,7 +1698,6 @@ long mmflags;
             init_mon_spells(mtmp, TRUE);
             arcane = TRUE;
         } else if (!clerical && ptr->mattk[ct].adtyp == AD_CLRC) {
-            pline("CLER");
             init_mon_spells(mtmp, FALSE);
             clerical = TRUE;
         }

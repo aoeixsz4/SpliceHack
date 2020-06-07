@@ -35,6 +35,10 @@ Monster Spellcasting
 - Probing a spellcasting monster will display its spell list.
 - The Wizard of Yendor has an enormous spell list, making him highly unpredictable
   to fight against.
+- Monsters can pick up and read spellbooks, allowing them to learn new spells.
+- Monsters can cast flame pillar, fireball, and cure sickness in order to
+  save themselves from being slimed. The odds of this ever happening are at best
+  unlikely, but this is NetHack, after all.
 - New monster spells have been added:
   - Turn Undead (from SLASH'EM). Call undead has been modified so that it revives
     nearby corpses.
@@ -51,6 +55,7 @@ Miscelaneous
 - Kicking a tree has a chance of spawning a serval or (very rarely) a jaguar.
 - Orcus is treated as being undead, as well as a demon. This is in line with lore,
   and also alters his spell selection slightly so that he has access to call undead.
+- Cure sickness now cures the withering status effect.
 
 Balance
 - Being deaf does not make you resistant to sonic attacks.

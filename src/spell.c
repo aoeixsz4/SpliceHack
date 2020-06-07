@@ -1334,6 +1334,10 @@ boolean atme;
             You("are no longer ill.");
         if (Slimed)
             make_slimed(0L, "The slime disappears!");
+        if (Withering) {
+            You("are no longer withering away.");
+            set_itimeout(&HWithering, (long) 0);
+        }
         healup(0, 0, TRUE, FALSE);
         break;
     case SPE_CREATE_FAMILIAR:

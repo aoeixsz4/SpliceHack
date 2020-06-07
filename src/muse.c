@@ -37,7 +37,7 @@ static boolean FDECL(cures_stoning, (struct monst *, struct obj *,
 static boolean FDECL(mcould_eat_tin, (struct monst *));
 static boolean FDECL(mon_can_understand, (struct monst *, struct obj *));
 static boolean FDECL(muse_unslime, (struct monst *, struct obj *,
-                                        struct trap *, BOOLEAN_P));
+                                        struct trap *, int, BOOLEAN_P));
 static int FDECL(cures_sliming, (struct monst *, struct obj *));
 static boolean FDECL(green_mon, (struct monst *));
 static void FDECL(mmake_wish, (struct monst *));
@@ -3332,7 +3332,16 @@ boolean by_you;
     if (!mon->mcan && !mon->mspec_used
         && attacktype_fordmg(mptr, AT_BREA, AD_FIRE)) {
         odummy = cg.zeroobj; /* otyp == STRANGE_OBJECT */
-        return muse_unslime(mon, &odummy, (struct trap *) 0, by_you);
+        return muse_unslime(mon, &odummy, (struct trap *) 0, 0, by_you);
+    }
+
+    if (!mon->mcan && !mon->mspec_used) {
+        if (m_knows_spell(mon, SPE_CURE_SICKNESS, TRUE))
+            return muse_unslime(mon, (struct obj *) &cg.zeroobj, 0, SPE_CURE_SICKNESS, FALSE);
+        if (m_knows_spell(mon, SPE_FIREBALL, TRUE))
+            return muse_unslime(mon, (struct obj *) &cg.zeroobj, 0, SPE_FIREBALL, FALSE);
+        if (m_knows_spell(mon, SPE_FLAME_PILLAR, TRUE))
+            return muse_unslime(mon, (struct obj *) &cg.zeroobj, 0, SPE_FLAME_PILLAR, FALSE);
     }
 
     /* same MUSE criteria as use_defensive() */
@@ -3341,7 +3350,7 @@ boolean by_you;
 
         for (obj = mon->minvent; obj; obj = obj->nobj)
             if (cures_sliming(mon, obj))
-                return muse_unslime(mon, obj, (struct trap *) 0, by_you);
+                return muse_unslime(mon, obj, (struct trap *) 0, 0, by_you);
 
         if (((t = t_at(mon->mx, mon->my)) == 0 || t->ttyp != FIRE_TRAP)
             && mptr->mmove && !mon->mtrapped) {
@@ -3370,7 +3379,7 @@ boolean by_you;
             }
         }
         if (t && t->ttyp == FIRE_TRAP)
-            return muse_unslime(mon, (struct obj *) &cg.zeroobj, t, by_you);
+            return muse_unslime(mon, (struct obj *) &cg.zeroobj, t, 0, by_you);
 
     } /* MUSE */
 
@@ -3387,10 +3396,11 @@ struct obj *obj;
 
 /* mon uses an item--selected by caller--to burn away incipient slime */
 static boolean
-muse_unslime(mon, obj, trap, by_you)
+muse_unslime(mon, obj, trap, spell, by_you)
 struct monst *mon;
 struct obj *obj;
 struct trap *trap;
+int spell;
 boolean by_you; /* true: if mon kills itself, hero gets credit/blame */
 {               /* [by_you not honored if 'mon' triggers fire trap]. */
     struct obj *odummyp;
@@ -3454,6 +3464,34 @@ boolean by_you; /* true: if mon kills itself, hero gets credit/blame */
                     by_you ? -EXPL_FIERY : EXPL_FIERY);
             dmg = 0; /* damage has been applied by explode() */
         }
+    } else if (spell == SPE_FLAME_PILLAR || spell == SPE_FIREBALL) {
+        if (canseemon(mon)) {
+            pline("%s casts a spell!", Monnam(mon));
+        }
+        if (cansee(mon->mx, mon->my)) {
+            pline("Wow! What an inferno!");
+        }
+        if (spell == SPE_FLAME_PILLAR) {
+            dmg = d(8, 6);
+        } else {
+            explode(mon->mx, mon->my, -11, dmg, SPBOOK_CLASS,
+                    /* by_you: override -11 for mon but not others */
+                    by_you ? -EXPL_FIERY : EXPL_FIERY);
+            dmg = 0;
+        }
+        mon->mspec_used = 10 - mon->m_lev;
+        if (mon->mspec_used < 2)
+            mon->mspec_used = 2;
+    } else if (spell == SPE_CURE_SICKNESS) {
+        if (canseemon(mon)) {
+            pline("%s casts a spell!", Monnam(mon));
+            pline("The slime covering %s vanishes!", mon_nam(mon));
+        }
+        vis = FALSE;
+        dmg = 0;
+        mon->mspec_used = 10 - mon->m_lev;
+        if (mon->mspec_used < 2)
+            mon->mspec_used = 2;
     } else { /* wand/horn of fire w/ positive charge count */
         mplayhorn(mon, obj, TRUE);
         /* -1 => monster's wand of fire; 2 => # of damage dice */

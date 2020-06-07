@@ -47,12 +47,26 @@ static const struct spellset {
     undead_mage_spells[] = {
         { SPE_TURN_UNDEAD, 11 },
         { 0, 0 }
+    },
+    high_priest_spells[] = {
+        { SPE_OPEN_WOUNDS, 1 },
+        { SPE_PARALYZE, 5 },
+        { SPE_CURE_BLINDNESS, 5},
+        { SPE_INSECT_SWARM, 9 },
+        { SPE_EXTRA_HEALING, 10 },
+        { SPE_TURN_UNDEAD, 11 },
+        { SPE_CURE_SICKNESS, 11},
+        { SPE_LIGHTNING, 12 },
+        { SPE_FLAME_PILLAR, 13 },
+        { SPE_GEYSER, 14 },
+        { 0, 0 }
     };
 
 static int FDECL(choose_monster_spell, (struct monst *, BOOLEAN_P));
 static void FDECL(m_learn_spell_list, (struct monst *, const struct spellset *, BOOLEAN_P));
 static void FDECL(cursetxt, (struct monst *, BOOLEAN_P));
 static int FDECL(m_cure_self, (struct monst *, int));
+static int FDECL(m_extra_cure_self, (struct monst *, int));
 static void FDECL(cast_wizard_spell, (struct monst *, int, int));
 static void FDECL(cast_cleric_spell, (struct monst *, int, int));
 static boolean FDECL(is_undirected_spell, (unsigned int, int));
@@ -134,6 +148,8 @@ boolean arcane;
         m_learn_spell_list(mtmp, rodney_spells, TRUE);
     } else if (is_undead(mtmp->data) && arcane) {
         m_learn_spell_list(mtmp, undead_mage_spells, arcane);
+    } else if (mtmp->data == &mons[PM_HIGH_PRIEST]) {
+        m_learn_spell_list(mtmp, high_priest_spells, arcane);
     }
     mtmp->minitspell = 1;
 }
@@ -391,6 +407,25 @@ int dmg;
     return dmg;
 }
 
+static int
+m_extra_cure_self(mtmp, dmg)
+struct monst *mtmp;
+int dmg;
+{
+    if (mtmp->mhp < mtmp->mhpmax) {
+        if (canseemon(mtmp))
+            pline("%s looks much better.", Monnam(mtmp));
+        /* note: player healing does 6d4; this used to do 1d8 */
+        if ((mtmp->mhp += d(6, 6)) > mtmp->mhpmax)
+            mtmp->mhp = mtmp->mhpmax;
+        dmg = 0;
+    }
+    if (!mtmp->mcansee) {
+        mtmp->mcansee = 1;
+    }
+    return dmg;
+}
+
 /* monster wizard and cleric spellcasting functions */
 /*
    If dmg is zero, then the monster is not casting at you.
@@ -548,8 +583,21 @@ int spellnum;
         mon_adjust_speed(mtmp, 1, (struct obj *) 0);
         dmg = 0;
         break;
+    case SPE_EXTRA_HEALING:
+        dmg = m_extra_cure_self(mtmp, dmg);
+        break;
     case SPE_HEALING:
         dmg = m_cure_self(mtmp, dmg);
+        break;
+    case SPE_CURE_BLINDNESS:
+        if (canseemon(mtmp))
+            pline("%s can see again.", Monnam(mtmp));
+        dmg = 0;
+        break;
+    case SPE_CURE_SICKNESS:
+        if (canseemon(mtmp))
+            pline("%s is no longer withering away.", Monnam(mtmp));
+        dmg = 0;
         break;
     case SPE_PSI_BOLT:
         /* prior to 3.4.0 Antimagic was setting the damage to 1--this
@@ -768,8 +816,21 @@ int spellnum;
         }
         dmg = 0;
         break;
+    case SPE_EXTRA_HEALING:
+        dmg = m_extra_cure_self(mtmp, dmg);
+        break;
     case SPE_HEALING:
         dmg = m_cure_self(mtmp, dmg);
+        break;
+    case SPE_CURE_BLINDNESS:
+        if (canseemon(mtmp))
+            pline("%s can see again.", Monnam(mtmp));
+        dmg = 0;
+        break;
+    case SPE_CURE_SICKNESS:
+        if (canseemon(mtmp))
+            pline("%s is no longer withering away.", Monnam(mtmp));
+        dmg = 0;
         break;
     case SPE_OPEN_WOUNDS:
         if (Antimagic) {
@@ -810,6 +871,9 @@ int spellnum;
         case SPE_INVISIBILITY:
         case SPE_HASTE_SELF:
         case SPE_HEALING:
+        case SPE_EXTRA_HEALING:
+        case SPE_CURE_BLINDNESS:
+        case SPE_CURE_SICKNESS:
             return TRUE;
         default:
             break;
@@ -818,6 +882,9 @@ int spellnum;
         switch (spellnum) {
         case SPE_INSECT_SWARM:
         case SPE_HEALING:
+        case SPE_EXTRA_HEALING:
+        case SPE_CURE_BLINDNESS:
+        case SPE_CURE_SICKNESS:
             return TRUE;
         default:
             break;
@@ -842,8 +909,14 @@ int spellnum;
       	if ((mtmp->minvis || mtmp->invis_blkd) && spellnum == SPE_INVISIBILITY)
       	    return TRUE;
       	/* healing when already healed */
-      	if (mtmp->mhp == mtmp->mhpmax && spellnum == SPE_HEALING)
+      	if (mtmp->mhp == mtmp->mhpmax && (spellnum == SPE_HEALING || spellnum == SPE_EXTRA_HEALING))
       	    return TRUE;
+        /* cure blindness when already able to see */
+        if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
+            return TRUE;
+        /* cure sickness only when acutally sick */
+        if (!mtmp->mwither)
+            return TRUE;
       	/* don't summon monsters if it doesn't think you're around */
       	if ((!mtmp->iswiz || g.context.no_of_wizards > 1)
       						&& spellnum == SPE_DOUBLE_TROUBLE)
@@ -854,8 +927,14 @@ int spellnum;
       #endif
      } else if (adtyp == AD_CLRC) {
       	/* healing when already healed */
-      	if (mtmp->mhp == mtmp->mhpmax && spellnum == SPE_HEALING)
+      	if (mtmp->mhp == mtmp->mhpmax && (spellnum == SPE_HEALING || spellnum == SPE_EXTRA_HEALING))
       	    return TRUE;
+        /* cure blindness when already able to see */
+        if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
+            return TRUE;
+        /* cure sickness only when acutally sick */
+        if (!mtmp->mwither)
+            return TRUE;
       	/* blindness spell on blinded player */
       	if ((!haseyes(mdef->data) || mdef->mblinded) && spellnum == SPE_BLINDNESS)
       	    return TRUE;
@@ -930,7 +1009,13 @@ int spellnum;
         if (mtmp->mpeaceful && !See_invisible && spellnum == SPE_INVISIBILITY)
             return TRUE;
         /* healing when already healed */
-        if (mtmp->mhp == mtmp->mhpmax && spellnum == SPE_HEALING)
+        if (mtmp->mhp == mtmp->mhpmax && (spellnum == SPE_HEALING || spellnum == SPE_EXTRA_HEALING))
+            return TRUE;
+        /* cure blindness when already able to see */
+        if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
+            return TRUE;
+        /* cure sickness only when acutally sick */
+        if (!mtmp->mwither)
             return TRUE;
         /* don't summon monsters if it doesn't think you're around */
         if (!mcouldseeu && (spellnum == SPE_SUMMON_NASTIES
@@ -955,7 +1040,13 @@ int spellnum;
         if (mtmp->mpeaceful && spellnum == SPE_INSECT_SWARM)
             return TRUE;
         /* healing when already healed */
-        if (mtmp->mhp == mtmp->mhpmax && spellnum == SPE_HEALING)
+        if (mtmp->mhp == mtmp->mhpmax && (spellnum == SPE_HEALING || spellnum == SPE_EXTRA_HEALING))
+            return TRUE;
+        /* cure blindness when already able to see */
+        if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
+            return TRUE;
+        /* cure sickness only when acutally sick */
+        if (!mtmp->mwither)
             return TRUE;
         /* don't summon insects if it doesn't think you're around */
         if (!mcouldseeu && spellnum == SPE_INSECT_SWARM)
