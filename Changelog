@@ -39,6 +39,11 @@ Monster Spellcasting
 - Monsters can cast flame pillar, fireball, and cure sickness in order to
   save themselves from being slimed. The odds of this ever happening are at best
   unlikely, but this is NetHack, after all.
+- Removed ability for players to cast most monster spells when polymorphed, and for
+  monsters to cast monster spells at each other. Although this was a difficult decision
+  to make, the code for casting was pulled from GruntHack, and was very difficult to
+  maintain, especially with the advent of the new system. Additionally, it presented
+  many balancing issues related to pets and polymorph forms.
 - New monster spells have been added:
   - Turn Undead (from SLASH'EM). Call undead has been modified so that it revives
     nearby corpses.

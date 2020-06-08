@@ -3,8 +3,6 @@
 /*-Copyright (c) Robert Patrick Rankin, 2011. */
 /* NetHack may be freely redistributed.  See license for details. */
 
-/* Edited on 5/1/18 by NullCGT */
-
 #include "hack.h"
 
 extern void demonpet();
@@ -45,7 +43,19 @@ static const struct spellset {
         { 0, 0 }
     },
     undead_mage_spells[] = {
+        { SPE_PSI_BOLT, 1 },
+        { SPE_FREEZE_SPHERE, 2 },
+        { SPE_HEALING, 2 },
+        { SPE_HASTE_SELF, 3 },
+        { SPE_WEB, 3 },
+        { SPE_INVISIBILITY, 5 },
+        { SPE_DRAIN_STRENGTH, 7 },
+        { SPE_DESTROY_ARMOR, 9 },
+        { SPE_CURSE_ITEMS, 11 },
         { SPE_TURN_UNDEAD, 11 },
+        { SPE_SUMMON_NASTIES, 16 },
+        { SPE_EXTRA_HEALING, 18 },
+        { SPE_FINGER_OF_DEATH, 21 },
         { 0, 0 }
     },
     high_priest_spells[] = {
@@ -212,7 +222,6 @@ boolean foundyou;
         int cnt = 40;
 
         do {
-            spellnum = rn2(ml);
             spellnum = choose_monster_spell(mtmp, mattk->adtyp == AD_SPEL);
             /* not trying to attack?  don't allow directed spells */
             if (!thinks_it_foundyou) {
@@ -439,6 +448,8 @@ struct monst *mtmp;
 int dmg;
 int spellnum;
 {
+    register struct trap *trtmp;
+
     if (dmg == 0 && !is_undirected_spell(AD_SPEL, spellnum)) {
         impossible("cast directed wizard spell (%d) with dmg=0?", spellnum);
         return;
@@ -493,6 +504,21 @@ int spellnum;
                 pline("%s from nowhere!", mappear);
         }
         dmg = 0;
+        break;
+    }
+    case SPE_FLAME_SPHERE:
+    case SPE_FREEZE_SPHERE: {
+        int count = max(1, mtmp->m_lev / 3);
+        int i;
+        for (i = 0; i < count; i++) {
+            makemon(spellnum == SPE_FLAME_SPHERE ? 
+                        &mons[PM_FLAMING_SPHERE] : &mons[PM_FREEZING_SPHERE], 
+                        mtmp->mx, mtmp->my, MM_ANGRY);
+        }
+        if (canseemon(mtmp)) {
+            pline("A miasma of %s fills the air!", 
+                spellnum == SPE_FLAME_SPHERE ? "flame" : "ice");
+        }
         break;
     }
     case SPE_TURN_UNDEAD:
@@ -595,6 +621,20 @@ int spellnum;
         if (canseemon(mtmp))
             pline("%s is no longer withering away.", Monnam(mtmp));
         dmg = 0;
+        break;
+    case SPE_JUMPING:
+        mtmp->mextrinsics |= MR2_JUMPING;
+        if (canseemon(mtmp))
+            pline("%s is %s", Monnam(mtmp), Hallucination ? "hopping mad!" : "very jumpy.");
+        break;
+    case SPE_WEB:
+        trtmp = maketrap(mtmp->mux, mtmp->muy, WEB);
+        if (trtmp && mtmp->mux == u.ux && mtmp->muy == u.uy) {
+            pline("Webs weave themselves in thin air!");
+            dotrap(trtmp, FORCETRAP);
+        } else {
+            You("smell cobwebs.");
+        }
         break;
     case SPE_PSI_BOLT:
         /* prior to 3.4.0 Antimagic was setting the damage to 1--this
@@ -863,11 +903,15 @@ int spellnum;
         switch (spellnum) {
         case SPE_DOUBLE_TROUBLE:
         case SPE_SUMMON_NASTIES:
+        case SPE_FLAME_SPHERE:
+        case SPE_FREEZE_SPHERE:
         case SPE_TURN_UNDEAD:
         case SPE_AGGRAVATION:
         case SPE_INVISIBILITY:
         case SPE_HASTE_SELF:
         case SPE_HEALING:
+        case SPE_JUMPING:
+        case SPE_WEB:
         case SPE_EXTRA_HEALING:
         case SPE_CURE_BLINDNESS:
         case SPE_CURE_SICKNESS:
@@ -908,18 +952,21 @@ int spellnum;
       	/* healing when already healed */
       	if (mtmp->mhp == mtmp->mhpmax && (spellnum == SPE_HEALING || spellnum == SPE_EXTRA_HEALING))
       	    return TRUE;
+        if (can_jump(mtmp) && spellnum == SPE_JUMPING)
+            return TRUE;
         /* cure blindness when already able to see */
         if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
             return TRUE;
         /* cure sickness only when acutally sick */
-        if (!mtmp->mwither)
+        if (!mtmp->mwither && spellnum == SPE_CURE_SICKNESS)
             return TRUE;
       	/* don't summon monsters if it doesn't think you're around */
       	if ((!mtmp->iswiz || g.context.no_of_wizards > 1)
       						&& spellnum == SPE_DOUBLE_TROUBLE)
       	    return TRUE;
       #ifndef TAME_SUMMONING
-             if (spellnum == SPE_SUMMON_NASTIES || spellnum == SPE_TURN_UNDEAD)
+             if (spellnum == SPE_SUMMON_NASTIES || spellnum == SPE_TURN_UNDEAD
+                 || spellnum == SPE_FLAME_SPHERE || spellnum == SPE_FREEZE_SPHERE)
       	    return TRUE;
       #endif
      } else if (adtyp == AD_CLRC) {
@@ -930,7 +977,7 @@ int spellnum;
         if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
             return TRUE;
         /* cure sickness only when acutally sick */
-        if (!mtmp->mwither)
+        if (!mtmp->mwither && spellnum == SPE_CURE_SICKNESS)
             return TRUE;
       	/* blindness spell on blinded player */
       	if ((!haseyes(mdef->data) || mdef->mblinded) && spellnum == SPE_BLINDNESS)
@@ -959,7 +1006,9 @@ int spellnum;
         /* aggravate monsters, etc. won't be cast by peaceful monsters */
         if (mtmp->mpeaceful
             && (spellnum == SPE_AGGRAVATION || spellnum == SPE_SUMMON_NASTIES
-                || spellnum == SPE_DOUBLE_TROUBLE || spellnum == SPE_TURN_UNDEAD))
+                || spellnum == SPE_DOUBLE_TROUBLE || spellnum == SPE_TURN_UNDEAD
+                || spellnum == SPE_FLAME_SPHERE || spellnum == SPE_FREEZE_SPHERE
+                || spellnum == SPE_WEB))
             return TRUE;
         /* haste self when already fast */
         if (mtmp->permspeed == MFAST && spellnum == SPE_HASTE_SELF)
@@ -977,15 +1026,21 @@ int spellnum;
         /* healing when already healed */
         if (mtmp->mhp == mtmp->mhpmax && (spellnum == SPE_HEALING || spellnum == SPE_EXTRA_HEALING))
             return TRUE;
+        if (can_jump(mtmp) && spellnum == SPE_JUMPING)
+            return TRUE;
+        if (!m_canseeu(mtmp) && spellnum == SPE_WEB)
+            return TRUE;
         /* cure blindness when already able to see */
         if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
             return TRUE;
         /* cure sickness only when acutally sick */
-        if (!mtmp->mwither)
+        if (!mtmp->mwither && spellnum == SPE_CURE_SICKNESS)
             return TRUE;
         /* don't summon monsters if it doesn't think you're around */
         if (!mcouldseeu && (spellnum == SPE_SUMMON_NASTIES
                             || spellnum == SPE_TURN_UNDEAD
+                            || spellnum == SPE_FLAME_SPHERE
+                            || spellnum == SPE_FREEZE_SPHERE
                             || (!mtmp->iswiz && spellnum == SPE_DOUBLE_TROUBLE)))
             return TRUE;
         if ((!mtmp->iswiz || g.context.no_of_wizards > 1)
@@ -1012,7 +1067,7 @@ int spellnum;
         if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
             return TRUE;
         /* cure sickness only when acutally sick */
-        if (!mtmp->mwither)
+        if (!mtmp->mwither && spellnum == SPE_CURE_SICKNESS)
             return TRUE;
         /* don't summon insects if it doesn't think you're around */
         if (!mcouldseeu && spellnum == SPE_INSECT_SWARM)
@@ -1202,7 +1257,10 @@ castmm(mtmp, mdef, mattk)
    	        if (is_undirected_spell(mattk->adtyp, spellnum)
                 && (mattk->adtyp != AD_SPEL
                 || (spellnum != SPE_AGGRAVATION &&
+                  spellnum != SPE_WEB &&
                   spellnum != SPE_SUMMON_NASTIES &&
+                  spellnum != SPE_FLAME_SPHERE &&
+                  spellnum != SPE_FREEZE_SPHERE &&
                   spellnum != SPE_TURN_UNDEAD))) {
      		    if (mattk->adtyp == AD_SPEL)
      		        cast_wizard_spell(mtmp, dmg, spellnum);
