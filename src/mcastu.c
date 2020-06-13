@@ -77,8 +77,7 @@ static void FDECL(m_learn_spell_list, (struct monst *, const struct spellset *, 
 static void FDECL(cursetxt, (struct monst *, BOOLEAN_P));
 static int FDECL(m_cure_self, (struct monst *, int));
 static int FDECL(m_extra_cure_self, (struct monst *, int));
-static void FDECL(cast_wizard_spell, (struct monst *, int, int));
-static void FDECL(cast_cleric_spell, (struct monst *, int, int));
+static void FDECL(cast_monster_spell, (struct monst *, int, int, BOOLEAN_P));
 static boolean FDECL(is_undirected_spell, (unsigned int, int));
 static boolean
 FDECL(spell_would_be_useless, (struct monst *, unsigned int, int));
@@ -384,10 +383,7 @@ boolean foundyou;
     case AD_SPEL: /* wizard spell */
     case AD_CLRC: /* clerical spell */
     {
-        if (mattk->adtyp == AD_SPEL)
-            cast_wizard_spell(mtmp, dmg, spellnum);
-        else
-            cast_cleric_spell(mtmp, dmg, spellnum);
+        cast_monster_spell(mtmp, dmg, spellnum, mattk->adtyp == AD_SPEL);
         dmg = 0; /* done by the spell casting functions */
         break;
     }
@@ -432,7 +428,7 @@ int dmg;
     return dmg;
 }
 
-/* monster wizard and cleric spellcasting functions */
+/* monster wizard and cleric spellcasting function */
 /*
    If dmg is zero, then the monster is not casting at you.
    If the monster is intentionally not casting at you, we have previously
@@ -443,15 +439,19 @@ int dmg;
  */
 static
 void
-cast_wizard_spell(mtmp, dmg, spellnum)
+cast_monster_spell(mtmp, dmg, spellnum, arcane)
 struct monst *mtmp;
 int dmg;
 int spellnum;
+boolean arcane;
 {
     register struct trap *trtmp;
 
-    if (dmg == 0 && !is_undirected_spell(AD_SPEL, spellnum)) {
+    if (arcane && dmg == 0 && !is_undirected_spell(AD_SPEL, spellnum)) {
         impossible("cast directed wizard spell (%d) with dmg=0?", spellnum);
+        return;
+    } else if (!arcane && dmg == 0 && !is_undirected_spell(AD_CLRC, spellnum)) {
+        impossible("cast directed cleric spell (%d) with dmg=0?", spellnum);
         return;
     }
 
@@ -508,12 +508,14 @@ int spellnum;
     }
     case SPE_FLAME_SPHERE:
     case SPE_FREEZE_SPHERE: {
+        coord cc;
         int count = max(1, mtmp->m_lev / 3);
         int i;
         for (i = 0; i < count; i++) {
+            enexto(&cc, mtmp->mx, mtmp->my, mtmp->data);
             makemon(spellnum == SPE_FLAME_SPHERE ? 
                         &mons[PM_FLAMING_SPHERE] : &mons[PM_FREEZING_SPHERE], 
-                        mtmp->mx, mtmp->my, MM_ANGRY);
+                        cc.x, cc.y, MM_ANGRY);
         }
         if (canseemon(mtmp)) {
             pline("A miasma of %s fills the air!", 
@@ -544,11 +546,6 @@ int spellnum;
     case SPE_AGGRAVATION:
         You_feel("that monsters are aware of your presence.");
         aggravate();
-        dmg = 0;
-        break;
-    case SPE_CURSE_ITEMS:
-        You_feel("as if you need some help.");
-        rndcurse();
         dmg = 0;
         break;
     case SPE_DESTROY_ARMOR:
@@ -606,22 +603,6 @@ int spellnum;
         mon_adjust_speed(mtmp, 1, (struct obj *) 0);
         dmg = 0;
         break;
-    case SPE_EXTRA_HEALING:
-        dmg = m_extra_cure_self(mtmp, dmg);
-        break;
-    case SPE_HEALING:
-        dmg = m_cure_self(mtmp, dmg);
-        break;
-    case SPE_CURE_BLINDNESS:
-        if (canseemon(mtmp))
-            pline("%s can see again.", Monnam(mtmp));
-        dmg = 0;
-        break;
-    case SPE_CURE_SICKNESS:
-        if (canseemon(mtmp))
-            pline("%s is no longer withering away.", Monnam(mtmp));
-        dmg = 0;
-        break;
     case SPE_JUMPING:
         mtmp->mextrinsics |= MR2_JUMPING;
         if (canseemon(mtmp))
@@ -652,29 +633,6 @@ int spellnum;
         else
             Your("%s suddenly aches very painfully!", body_part(HEAD));
         break;
-    default:
-        impossible("mcastu: invalid magic spell (%d)", spellnum);
-        dmg = 0;
-        break;
-    }
-
-    if (dmg)
-        mdamageu(mtmp, dmg);
-}
-
-static
-void
-cast_cleric_spell(mtmp, dmg, spellnum)
-struct monst *mtmp;
-int dmg;
-int spellnum;
-{
-    if (dmg == 0 && !is_undirected_spell(AD_CLRC, spellnum)) {
-        impossible("cast directed cleric spell (%d) with dmg=0?", spellnum);
-        return;
-    }
-
-    switch (spellnum) {
     case SPE_GEYSER:
         /* this is physical damage (force not heat),
          * not magical damage or fire damage
@@ -884,7 +842,7 @@ int spellnum;
             Your("body is covered with painful wounds!");
         break;
     default:
-        impossible("mcastu: invalid clerical spell (%d)", spellnum);
+        impossible("mcastu: invalid magic spell (%d)", spellnum);
         dmg = 0;
         break;
     }
@@ -1117,9 +1075,9 @@ register struct attack *mattk;
 */
 int
 castmm(mtmp, mdef, mattk)
-	register struct monst *mtmp;
-	register struct monst *mdef;
-	register struct attack *mattk;
+register struct monst *mtmp;
+register struct monst *mdef;
+register struct attack *mattk;
 {
    	int	dmg, ml = mtmp->m_lev;
    	int ret;
@@ -1263,15 +1221,12 @@ castmm(mtmp, mdef, mattk)
                   spellnum != SPE_FLAME_SPHERE &&
                   spellnum != SPE_FREEZE_SPHERE &&
                   spellnum != SPE_TURN_UNDEAD))) {
-     		    if (mattk->adtyp == AD_SPEL)
-     		        cast_wizard_spell(mtmp, dmg, spellnum);
-     		    else
-     		        cast_cleric_spell(mtmp, dmg, spellnum);
-         		}
+     		    cast_monster_spell(mtmp, dmg, spellnum, mattk->adtyp == AD_SPEL);
          		dmg = 0; /* done by the spell casting functions */
          		break;
+   	        }
    	    }
-   	}
+    }
    	if (dmg > 0 && mdef->mhp > 0) {
    	    mdef->mhp -= dmg;
    	    if (mdef->mhp < 1) monkilled(mdef, "", mattk->adtyp);
@@ -1288,8 +1243,8 @@ castmm(mtmp, mdef, mattk)
 */
 int
 castum(mtmp, mattk)
-       register struct monst *mtmp;
-	register struct attack *mattk;
+register struct monst *mtmp;
+register struct attack *mattk;
 {
    	int dmg, ml = mons[u.umonnum].mlevel;
    	int ret;
