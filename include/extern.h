@@ -1029,6 +1029,7 @@ E void FDECL(shuffle_int_array, (int *, int));
 
 /* ### insight.c ### */
 
+E int NDECL(num_extinct);
 E int NDECL(doattributes);
 E void FDECL(enlightenment, (int, int));
 E void FDECL(youhiding, (BOOLEAN_P, int));
@@ -1870,6 +1871,7 @@ E struct fruit *FDECL(fruit_from_indx, (int));
 E struct fruit *FDECL(fruit_from_name, (const char *, BOOLEAN_P, int *));
 E void FDECL(reorder_fruit, (BOOLEAN_P));
 E char *FDECL(xname, (struct obj *));
+E char *FDECL(xname_forcemat, (struct obj *));
 E char *FDECL(mshot_xname, (struct obj *));
 E boolean FDECL(the_unique_obj, (struct obj *));
 E boolean FDECL(the_unique_pm, (struct permonst *));
