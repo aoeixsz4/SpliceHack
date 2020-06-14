@@ -1251,7 +1251,6 @@ boolean atme;
     case SPE_STONE_TO_FLESH:
     case SPE_PSI_BOLT:
     case SPE_STUN:
-    case SPE_CONFUSION:
     case SPE_CURSE_ITEMS:
     case SPE_DESTROY_ARMOR:
     case SPE_OPEN_WOUNDS:

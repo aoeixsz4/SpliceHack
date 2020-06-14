@@ -178,6 +178,7 @@ struct monst {
 
     int meating;           /* monster is eating timeout */
     int mfading;           /* monster is fading away timeout */
+    int prot_bon;          /* monster protection */
     uint64_t arc_spls;       /* monster arcane spells */
     uint64_t clr_spls;      /* monster clerical spells */
     struct mextra *mextra; /* point to mextra struct */

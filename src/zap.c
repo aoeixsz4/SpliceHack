@@ -237,18 +237,6 @@ struct obj *otmp;
             mtmp->mstun = 1;
         }
         break;
-    case SPE_CONFUSION:
-        if (resist(mtmp, 0, 0, FALSE)) {
-       	    shieldeff(mtmp->mx, mtmp->my);
-       	    if (canseemon(mtmp))
-       	        pline("%s seems momentarily dizzy.", Monnam(mtmp));
-       	} else {
-       	    if (canseemon(mtmp))
-       	        pline("%s seems %sconfused!", Monnam(mtmp),
-       	              mtmp->mconf ? "more " : "");
-       	    mtmp->mconf = 1;
-       	}
-        break;
     case SPE_DRAIN_STRENGTH:
         dmg = rnd(max(u.ulevel - 6, 0));
         if (resist(mtmp, 0, 0, FALSE)) {
@@ -2841,10 +2829,6 @@ boolean ordinary;
         pline("You%s stun yourself!", Hallucination ? "\'re so cool that" : "");
         make_stunned((HStun & TIMEOUT) + (long) d(4, 4), FALSE);
         break;
-    case SPE_CONFUSION:
-        You("strain your brain!");
-        make_confused((HConfusion & TIMEOUT) + (long) u.ulevel, FALSE);
-        break;
     case SPE_DRAIN_STRENGTH:
         pline("Your muscles atrophy!");
         damage = max(u.ulevel - 6, 0);
@@ -3381,7 +3365,6 @@ struct obj *obj; /* wand or spell */
     case WAN_WINDSTORM:
     case SPE_PSI_BOLT:
     case SPE_STUN:
-    case SPE_CONFUSION:
     case SPE_OPEN_WOUNDS:
     case SPE_GEYSER:
     case SPE_PARALYZE:

@@ -1167,9 +1167,7 @@ SPELL("double trouble",  "backwards",
       P_MATTER_SPELL,       0,  10, 7, 1, NODIR, CLR_MAGENTA),
 SPELL("open wounds",     "haunted", /* moans when read */
       P_CLERIC_SPELL,       0,  10, 1, 1, IMMEDIATE, CLR_WHITE),
-SPELL("confusion",       "ergodic", /* always warn about difficult to comprehend */
-      P_CLERIC_SPELL,       0,  10, 3, 1, IMMEDIATE, CLR_BLUE),
-SPELL("paralyze",        "sticky",
+SPELL("paralyze",        "ergodic",
       P_CLERIC_SPELL,       0,  10, 5, 1, IMMEDIATE, CLR_BRIGHT_GREEN),
 SPELL("blindness",       "lead-lined",
       P_CLERIC_SPELL,       0,  10, 5, 1, IMMEDIATE, CLR_WHITE),

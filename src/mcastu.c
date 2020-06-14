@@ -26,8 +26,9 @@ static const struct spellset {
     },
     cleric_spells[] = {
         { SPE_OPEN_WOUNDS, 1 },
+        { SPE_PROTECTION, 1 },
         { SPE_HEALING, 2 },
-        { SPE_CONFUSION, 3 },
+        { SPE_CONFUSE_MONSTER, 3 },
         { SPE_PARALYZE, 5 },
         { SPE_BLINDNESS, 6 },
         { SPE_INSECT_SWARM, 9 },
@@ -80,7 +81,9 @@ static int FDECL(m_extra_cure_self, (struct monst *, int));
 static void FDECL(cast_monster_spell, (struct monst *, int, int, BOOLEAN_P));
 static boolean FDECL(is_undirected_spell, (unsigned int, int));
 static boolean
-FDECL(spell_would_be_useless, (struct monst *, unsigned int, int));
+FDECL(spell_would_be_useless, (struct monst *, int));
+
+#define IS_EXPERT(mtmp) ((mtmp)->m_lev > 20)
 
 extern const char *const flash_types[]; /* from zap.c */
 
@@ -225,7 +228,7 @@ boolean foundyou;
             /* not trying to attack?  don't allow directed spells */
             if (!thinks_it_foundyou) {
                 if (!is_undirected_spell(mattk->adtyp, spellnum)
-                    || spell_would_be_useless(mtmp, mattk->adtyp, spellnum)) {
+                    || spell_would_be_useless(mtmp, spellnum)) {
                     if (foundyou)
                         impossible(
                        "spellcasting monster found you and doesn't know it?");
@@ -234,7 +237,7 @@ boolean foundyou;
                 break;
             }
         } while (--cnt > 0
-                 && spell_would_be_useless(mtmp, mattk->adtyp, spellnum));
+                 && spell_would_be_useless(mtmp, spellnum));
         if (cnt == 0)
             return 0;
     }
@@ -793,7 +796,7 @@ boolean arcane;
         g.nomovemsg = 0;
         dmg = 0;
         break;
-    case SPE_CONFUSION:
+    case SPE_CONFUSE_MONSTER:
         if (Antimagic) {
             shieldeff(u.ux, u.uy);
             You_feel("momentarily dizzy.");
@@ -827,6 +830,12 @@ boolean arcane;
             pline("%s is no longer withering away.", Monnam(mtmp));
         dmg = 0;
         break;
+    case SPE_PROTECTION:
+        if (canseemon(mtmp))
+            pline("The area around %s begins to shimmer with %s haze.", mon_nam(mtmp), an(hcolor(NH_GOLDEN)));
+        mtmp->prot_bon += IS_EXPERT(mtmp) ? 4 : 2;
+        dmg = 0;
+        break;
     case SPE_OPEN_WOUNDS:
         if (Antimagic) {
             shieldeff(u.ux, u.uy);
@@ -840,6 +849,9 @@ boolean arcane;
             pline("Severe wounds appear on your body!");
         else
             Your("body is covered with painful wounds!");
+        break;
+    case SPE_LIGHT:
+        litroom_mon(0, 0, u.ux, u.uy);
         break;
     default:
         impossible("mcastu: invalid magic spell (%d)", spellnum);
@@ -873,6 +885,8 @@ int spellnum;
         case SPE_EXTRA_HEALING:
         case SPE_CURE_BLINDNESS:
         case SPE_CURE_SICKNESS:
+        case SPE_LIGHT:
+        case SPE_PROTECTION:
             return TRUE;
         default:
             break;
@@ -884,6 +898,7 @@ int spellnum;
         case SPE_EXTRA_HEALING:
         case SPE_CURE_BLINDNESS:
         case SPE_CURE_SICKNESS:
+        case SPE_PROTECTION:
             return TRUE;
         default:
             break;
@@ -947,9 +962,8 @@ int spellnum;
 /* Some spells are useless under some circumstances. */
 static
 boolean
-spell_would_be_useless(mtmp, adtyp, spellnum)
+spell_would_be_useless(mtmp, spellnum)
 struct monst *mtmp;
-unsigned int adtyp;
 int spellnum;
 {
     /* Some spells don't require the player to really be there and can be cast
@@ -960,80 +974,71 @@ int spellnum;
      */
     boolean mcouldseeu = couldsee(mtmp->mx, mtmp->my);
 
-    if (adtyp == AD_SPEL) {
-        /* aggravate monsters, etc. won't be cast by peaceful monsters */
-        if (mtmp->mpeaceful
-            && (spellnum == SPE_AGGRAVATION || spellnum == SPE_SUMMON_NASTIES
-                || spellnum == SPE_DOUBLE_TROUBLE || spellnum == SPE_TURN_UNDEAD
-                || spellnum == SPE_FLAME_SPHERE || spellnum == SPE_FREEZE_SPHERE
-                || spellnum == SPE_WEB))
-            return TRUE;
-        /* haste self when already fast */
-        if (mtmp->permspeed == MFAST && spellnum == SPE_HASTE_SELF)
-            return TRUE;
-        /* invisibility when already invisible */
-        if ((mtmp->minvis || mtmp->invis_blkd) && spellnum == SPE_INVISIBILITY)
-            return TRUE;
-        /* peaceful monster won't cast invisibility if you can't see
-           invisible,
-           same as when monsters drink potions of invisibility.  This doesn't
-           really make a lot of sense, but lets the player avoid hitting
-           peaceful monsters by mistake */
-        if (mtmp->mpeaceful && !See_invisible && spellnum == SPE_INVISIBILITY)
-            return TRUE;
-        /* healing when already healed */
-        if (mtmp->mhp == mtmp->mhpmax && (spellnum == SPE_HEALING || spellnum == SPE_EXTRA_HEALING))
-            return TRUE;
-        if (can_jump(mtmp) && spellnum == SPE_JUMPING)
-            return TRUE;
-        if (!m_canseeu(mtmp) && spellnum == SPE_WEB)
-            return TRUE;
-        /* cure blindness when already able to see */
-        if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
-            return TRUE;
-        /* cure sickness only when acutally sick */
-        if (!mtmp->mwither && spellnum == SPE_CURE_SICKNESS)
-            return TRUE;
-        /* don't summon monsters if it doesn't think you're around */
-        if (!mcouldseeu && (spellnum == SPE_SUMMON_NASTIES
-                            || spellnum == SPE_TURN_UNDEAD
-                            || spellnum == SPE_FLAME_SPHERE
-                            || spellnum == SPE_FREEZE_SPHERE
-                            || (!mtmp->iswiz && spellnum == SPE_DOUBLE_TROUBLE)))
-            return TRUE;
-        if ((!mtmp->iswiz || g.context.no_of_wizards > 1)
-            && spellnum == SPE_DOUBLE_TROUBLE)
-            return TRUE;
-        /* aggravation (global wakeup) when everyone is already active */
-        if (spellnum == SPE_AGGRAVATION) {
-            /* if nothing needs to be awakened then this spell is useless
-               but caster might not realize that [chance to pick it then
-               must be very small otherwise caller's many retry attempts
-               will eventually end up picking it too often] */
-            if (!has_aggravatables(mtmp))
-                return rn2(100) ? TRUE : FALSE;
-        }
-    } else if (adtyp == AD_CLRC) {
-        /* summon insects/sticks to snakes won't be cast by peaceful monsters
-         */
-        if (mtmp->mpeaceful && spellnum == SPE_INSECT_SWARM)
-            return TRUE;
-        /* healing when already healed */
-        if (mtmp->mhp == mtmp->mhpmax && (spellnum == SPE_HEALING || spellnum == SPE_EXTRA_HEALING))
-            return TRUE;
-        /* cure blindness when already able to see */
-        if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
-            return TRUE;
-        /* cure sickness only when acutally sick */
-        if (!mtmp->mwither && spellnum == SPE_CURE_SICKNESS)
-            return TRUE;
-        /* don't summon insects if it doesn't think you're around */
-        if (!mcouldseeu && spellnum == SPE_INSECT_SWARM)
-            return TRUE;
-        /* blindness spell on blinded player */
-        if (Blinded && spellnum == SPE_BLINDNESS)
-            return TRUE;
-    }
+    /* aggravate monsters, etc. won't be cast by peaceful monsters */
+    if (mtmp->mpeaceful
+        && (spellnum == SPE_AGGRAVATION || spellnum == SPE_SUMMON_NASTIES
+            || spellnum == SPE_DOUBLE_TROUBLE || spellnum == SPE_TURN_UNDEAD
+            || spellnum == SPE_FLAME_SPHERE || spellnum == SPE_FREEZE_SPHERE
+            || spellnum == SPE_WEB))
+        return TRUE;
+    /* haste self when already fast */
+    if (mtmp->permspeed == MFAST && spellnum == SPE_HASTE_SELF)
+        return TRUE;
+    /* invisibility when already invisible */
+    if ((mtmp->minvis || mtmp->invis_blkd) && spellnum == SPE_INVISIBILITY)
+        return TRUE;
+    /* peaceful monster won't cast invisibility if you can't see
+        invisible,
+        same as when monsters drink potions of invisibility.  This doesn't
+        really make a lot of sense, but lets the player avoid hitting
+        peaceful monsters by mistake */
+    if (mtmp->mpeaceful && !See_invisible && spellnum == SPE_INVISIBILITY)
+        return TRUE;
+    /* healing when already healed */
+    if (mtmp->mhp == mtmp->mhpmax && (spellnum == SPE_HEALING || spellnum == SPE_EXTRA_HEALING))
+        return TRUE;
+    if (can_jump(mtmp) && spellnum == SPE_JUMPING)
+        return TRUE;
+    if (!m_canseeu(mtmp) && (spellnum == SPE_WEB || spellnum == SPE_LIGHT))
+        return TRUE;
+    /* cure blindness when already able to see */
+    if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
+        return TRUE;
+    /* don't spam protection infinitely */
+    if (mtmp->prot_bon >= 15)
+        return TRUE;
+    /* don't summon monsters if it doesn't think you're around */
+    if (!mcouldseeu && (spellnum == SPE_SUMMON_NASTIES
+                        || spellnum == SPE_TURN_UNDEAD
+                        || spellnum == SPE_FLAME_SPHERE
+                        || spellnum == SPE_FREEZE_SPHERE
+                        || (!mtmp->iswiz && spellnum == SPE_DOUBLE_TROUBLE)))
+        return TRUE;
+    if ((!mtmp->iswiz || g.context.no_of_wizards > 1)
+        && spellnum == SPE_DOUBLE_TROUBLE)
+        return TRUE;
+    /* aggravation (global wakeup) when everyone is already active */
+    if (spellnum == SPE_AGGRAVATION) {
+        /* if nothing needs to be awakened then this spell is useless
+            but caster might not realize that [chance to pick it then
+            must be very small otherwise caller's many retry attempts
+            will eventually end up picking it too often] */
+        if (!has_aggravatables(mtmp))
+            return rn2(100) ? TRUE : FALSE;
+    }   
+    /* summon insects/sticks to snakes won't be cast by peaceful monsters
+        */
+    if (mtmp->mpeaceful && spellnum == SPE_INSECT_SWARM)
+        return TRUE;
+    /* cure sickness only when acutally sick */
+    if (!mtmp->mwither && spellnum == SPE_CURE_SICKNESS)
+        return TRUE;
+    /* don't summon insects if it doesn't think you're around */
+    if (!mcouldseeu && spellnum == SPE_INSECT_SWARM)
+        return TRUE;
+    /* blindness spell on blinded player */
+    if (Blinded && spellnum == SPE_BLINDNESS)
+        return TRUE;
     return FALSE;
 }
 

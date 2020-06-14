@@ -484,6 +484,7 @@ register struct monst *mon;
 {
     register struct obj *obj;
     int base = mon->data->ac;
+    int prot = mon->prot_bon;
     long mwflags = mon->misc_worn_check;
 
     for (obj = mon->minvent; obj; obj = obj->nobj) {
@@ -495,6 +496,7 @@ register struct monst *mon;
             /* since ARM_BONUS is positive, subtracting it increases AC */
         }
     }
+    base -= prot;
     return base;
 }
 

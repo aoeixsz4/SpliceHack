@@ -534,6 +534,14 @@ register struct monst *mtmp;
             monkilled(mtmp, "", AD_DETH);
     }
 
+    /* protection slowly wears off */
+    if (mtmp->prot_bon && g.moves % 10 == 0) {
+        mtmp->prot_bon -= 1;
+        if (canseemon(mtmp))
+            pline("The %s haze around %s %s.", hcolor(NH_GOLDEN),
+                mon_nam(mtmp), mtmp->prot_bon ? "becomes less dense" : "disappears");
+    }
+
     /* confused monsters get unconfused with small probability */
     if (mtmp->mconf && !rn2(50))
         mtmp->mconf = 0;
