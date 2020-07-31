@@ -53,7 +53,7 @@ Version     _WIN_32IE   Platform/IE
 /*#define COMCTL_URL
  * "http://www.microsoft.com/msdownload/ieplatform/ie/comctrlx86.asp"*/
 
-extern void FDECL(nethack_exit, (int));
+extern void FDECL(nethack_exit, (int)) NORETURN;
 static TCHAR *_get_cmd_arg(TCHAR *pCmdLine);
 static HRESULT GetComCtlVersion(LPDWORD pdwMajor, LPDWORD pdwMinor);
 BOOL WINAPI
@@ -138,6 +138,10 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine,
         LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_PETMARK));
     if (_nethack_app.bmpPetMark == NULL)
         panic("cannot load pet mark bitmap");
+    _nethack_app.bmpRidingMark =
+        LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_RIDINGMARK));
+    if (_nethack_app.bmpRidingMark == NULL)
+        panic("cannot load riding mark bitmap");
 #ifdef USE_PILEMARK
     _nethack_app.bmpPileMark =
         LoadBitmap(hInstance, MAKEINTRESOURCE(IDB_PILEMARK));

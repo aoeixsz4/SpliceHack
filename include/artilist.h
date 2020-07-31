@@ -61,6 +61,22 @@ static NEARDATA struct artifact artilist[] = {
       NO_COLOR),
 
     /*
+    *       Avalon grants regeneration while carried, just like the Arthurian
+    *       legends describe.
+    */
+
+    A("Avalon", SCABBARD, (SPFX_RESTR), 0, 0,
+      PHYS(1, 1), NO_DFNS, CARY(AD_WTHR), HPHEAL, A_LAWFUL, PM_KNIGHT, NON_PM,
+      4500L, NO_COLOR),
+
+    /*
+    *        Balmung shreds the armor of opponents.
+    *
+    */
+   A("Balmung", BROADSWORD, (SPFX_RESTR), 0, 0, PHYS(4, 9), FIRE(0, 0), NO_CARY,
+      0, A_LAWFUL, NON_PM, NON_PM, 1000L, CLR_BROWN),
+
+    /*
     *       This lance does a lot of damage, and also automatically unseats any
     *       mounted person it hits.
     */
@@ -136,6 +152,12 @@ static NEARDATA struct artifact artilist[] = {
     A("Gungnir", DWARVISH_SPEAR, (SPFX_RESTR), 0, 0, PHYS(100, 4),
       NO_DFNS, NO_CARY, LIGHTNING_BOLT, A_NEUTRAL, PM_VALKYRIE, NON_PM, 4000L, NO_COLOR),
 
+    /* 
+    *       I cannot believe this hasn't been done yet.
+    */
+    A("Hand Grenade of Antioch", FRAG_GRENADE, (SPFX_RESTR), 0, 0, PHYS(1, 1),
+      NO_DFNS, NO_CARY, 0, A_LAWFUL, NON_PM, NON_PM, 300L, NO_COLOR),
+
     A("Idspike", ATHAME, (SPFX_RESTR | SPFX_ATTK | SPFX_DEFN), 0, 0,
       PSYC(5, 0), PSYC(0, 0), NO_CARY, 0, A_NONE, NON_PM, NON_PM, 4000L,
       NO_COLOR),
@@ -194,14 +216,6 @@ static NEARDATA struct artifact artilist[] = {
     A("Sunspot", MACE, (SPFX_RESTR | SPFX_BLIND), 0, 0,
       PHYS(5, 5), DFNS(AD_BLND), NO_CARY, 0, A_NONE, NON_PM, NON_PM, 2000L,
       NO_COLOR),
-
-    /*
-    *       May or may not be an obscure reference. Gains strength based
-    *       on moon phase, which I think is a feature of an artifact in
-    *       another variant.
-    */
-    A("Unlimited Moon", FLAIL, SPFX_RESTR, 0, 0, PHYS(2, 2), COLD(0, 0),
-      NO_CARY, 0, A_NEUTRAL, NON_PM, NON_PM, 1500L, NO_COLOR),
 
     /*
     *        Just for fun.
@@ -271,7 +285,7 @@ static NEARDATA struct artifact artilist[] = {
 
     A("Excalibur", LONG_SWORD, (SPFX_NOGEN | SPFX_RESTR | SPFX_SEEK
                                 | SPFX_DEFN | SPFX_INTEL | SPFX_SEARCH),
-      0, 0, PHYS(5, 10), DRLI(0, 0), NO_CARY, 0, A_LAWFUL, PM_KNIGHT, NON_PM,
+      0, 0, PHYS(5, 10), DRLI(0, 0), NO_CARY, HOLY_LANCE, A_LAWFUL, PM_KNIGHT, NON_PM,
       4000L, NO_COLOR),
     /*
      *      Stormbringer only has a 2 because it can drain a level,
@@ -399,7 +413,7 @@ static NEARDATA struct artifact artilist[] = {
       NON_PM, 2500L, NO_COLOR),
 
     A("The Heart of Ahriman", LUCKSTONE,
-      (SPFX_NOGEN | SPFX_RESTR | SPFX_INTEL), SPFX_STLTH, 0,
+      (SPFX_NOGEN | SPFX_RESTR | SPFX_INTEL), (SPFX_STLTH|SPFX_TCTRL), 0,
       /* this stone does double damage if used as a projectile weapon */
       PHYS(5, 0), NO_DFNS, NO_CARY, LEVITATION, A_NEUTRAL, PM_BARBARIAN,
       NON_PM, 2500L, NO_COLOR),

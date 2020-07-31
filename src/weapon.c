@@ -27,15 +27,16 @@ static void FDECL(skill_advance, (int));
 #define PN_POLEARMS (-4)
 #define PN_SABER (-5)
 #define PN_HAMMER (-6)
-#define PN_WHIP (-7)
-#define PN_ATTACK_SPELL (-8)
-#define PN_HEALING_SPELL (-9)
-#define PN_DIVINATION_SPELL (-10)
-#define PN_ENCHANTMENT_SPELL (-11)
-#define PN_CLERIC_SPELL (-12)
-#define PN_ESCAPE_SPELL (-13)
-#define PN_MATTER_SPELL (-14)
-#define PN_COOKING (-15)
+#define PN_FIREARMS	(-7)
+#define PN_WHIP (-8)
+#define PN_ATTACK_SPELL (-9)
+#define PN_HEALING_SPELL (-10)
+#define PN_DIVINATION_SPELL (-11)
+#define PN_ENCHANTMENT_SPELL (-12)
+#define PN_CLERIC_SPELL (-13)
+#define PN_ESCAPE_SPELL (-14)
+#define PN_MATTER_SPELL (-15)
+#define PN_COOKING (-16)
 
 static void FDECL(give_may_advance_msg, (int));
 static int NDECL(practice);
@@ -48,7 +49,7 @@ static NEARDATA const short skill_names_indices[P_NUM_SKILLS] = {
     0, DAGGER, KNIFE, AXE, PICK_AXE, SHORT_SWORD, BROADSWORD, LONG_SWORD,
     TWO_HANDED_SWORD, SCIMITAR, PN_SABER, CLUB, MACE, MORNING_STAR, FLAIL,
     PN_HAMMER, QUARTERSTAFF, PN_POLEARMS, SPEAR, TRIDENT, LANCE, BOW, SLING,
-    CROSSBOW, DART, SHURIKEN, BOOMERANG, PN_WHIP, UNICORN_HORN,
+    PN_FIREARMS, CROSSBOW, DART, SHURIKEN, BOOMERANG, PN_WHIP, UNICORN_HORN,
     PN_ATTACK_SPELL, PN_HEALING_SPELL, PN_DIVINATION_SPELL,
     PN_ENCHANTMENT_SPELL, PN_CLERIC_SPELL, PN_ESCAPE_SPELL, PN_MATTER_SPELL,
     PN_BARE_HANDED, PN_TWO_WEAPONS, PN_RIDING, PN_COOKING
@@ -57,7 +58,7 @@ static NEARDATA const short skill_names_indices[P_NUM_SKILLS] = {
 /* note: entry [0] isn't used */
 static NEARDATA const char *const odd_skill_names[] = {
     "no skill", "bare hands", /* use barehands_or_martial[] instead */
-    "two weapon combat", "riding", "polearms", "saber", "hammer", "whip",
+    "two weapon combat", "riding", "polearms", "saber", "hammer", "firearms", "whip",
     "attack spells", "healing spells", "divination spells",
     "enchantment spells", "clerical spells", "escape spells", "matter spells",
     "cooking",
@@ -136,6 +137,10 @@ struct obj *obj;
     case P_CROSSBOW:
         if (is_ammo(obj))
             descr = "bolt";
+        break;
+    case P_FIREARM:
+        if (is_ammo(obj))
+            descr = "bullet";
         break;
     case P_FLAIL:
         if (obj->otyp == GRAPPLING_HOOK)
@@ -596,6 +601,7 @@ int x;
 
 /* TODO: have monsters use aklys' throw-and-return */
 static NEARDATA const int rwep[] = {
+    FRAG_GRENADE, GAS_GRENADE, BULLET, SHOTGUN_SHELL,
     ORB_OF_PERMAFROST, DWARVISH_SPEAR, ELVEN_SPEAR, SPEAR,
     ORCISH_SPEAR, JAVELIN, WINDMILL_BLADE, THROWING_AXE,
     SHURIKEN, LIGHT_ARROW, 
@@ -760,6 +766,19 @@ register struct monst *mtmp;
                 break;
             case P_CROSSBOW:
                 g.propellor = oselect(mtmp, CROSSBOW);
+                break;
+            case P_FIREARM:
+                if ((objects[rwep[i]].w_ammotyp) == WP_BULLET) {
+                    g.propellor = (oselect(mtmp, HEAVY_MACHINE_GUN));
+                    if (!g.propellor) g.propellor = (oselect(mtmp, SUBMACHINE_GUN));
+                    if (!g.propellor) g.propellor = (oselect(mtmp, SNIPER_RIFLE));
+                    if (!g.propellor) g.propellor = (oselect(mtmp, RIFLE));
+                    if (!g.propellor) g.propellor = (oselect(mtmp, PISTOL));
+                } else if ((objects[rwep[i]].w_ammotyp) == WP_SHELL) {
+                    g.propellor = (oselect(mtmp, AUTO_SHOTGUN));
+                    if (!g.propellor) g.propellor = (oselect(mtmp, SHOTGUN));
+                }
+                break;
             }
             if (!tmpprop) tmpprop = g.propellor;
             if ((otmp = MON_WEP(mtmp)) && mwelded(otmp) && otmp != g.propellor
@@ -819,7 +838,8 @@ static const NEARDATA short hwep[] = {
     ORCISH_SPEAR, FLAIL, BULLWHIP, BASEBALL_BAT, QUARTERSTAFF, JAVELIN,
     AKLYS, CLUB, PICK_AXE,
     RUBBER_HOSE, WAR_HAMMER, ELVEN_DAGGER, DAGGER, ORCISH_DAGGER,
-    ATHAME, SCALPEL, KNIFE, WORM_TOOTH
+    ATHAME, SCALPEL, KNIFE, WORM_TOOTH,
+    AUTO_SHOTGUN, SHOTGUN, RIFLE, PISTOL /* hitting enemies with small firearms */
 };
 
 boolean
@@ -1940,7 +1960,7 @@ const struct def_skill *class_skill;
         P_SKILL(P_BARE_HANDED_COMBAT) = P_BASIC;
 
     /* Roles that start with a horse know how to ride it */
-    if (g.urole.petnum == PM_PONY)
+    if (g.urole.petnum == PM_PONY || Role_if(PM_DRAGONMASTER))
         P_SKILL(P_RIDING) = P_BASIC;
     
     /* All merfolk can use tridents */

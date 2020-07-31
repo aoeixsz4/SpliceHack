@@ -123,6 +123,12 @@ struct objclass {
     /* Check the AD&D rules!  The FIRST is small monster damage. */
     /* for weapons, and tools, rocks, and gems useful as weapons */
     schar oc_wsdam, oc_wldam; /* max small/large monster damage */
+#define w_ammotyp	oc_oc2		/* type of ammo taken by ranged weapon */
+#define WP_GENERIC	0		/* all ammo subclasses ok */
+#define WP_BULLET	1
+#define WP_SHELL	2
+#define WP_ROCKET	3
+#define WP_GRENADE	4
     schar oc_oc1, oc_oc2;
 #define oc_hitbon oc_oc1 /* weapons: "to hit" bonus */
 
@@ -183,6 +189,33 @@ enum obj_class_types {
 
 #define BURNING_OIL (MAXOCLASSES + 1) /* Can be used as input to explode.   */
 #define MON_EXPLODE (MAXOCLASSES + 2) /* Exploding monster (e.g. gas spore) */
+
+#define SHK_NOMATCH     0       /* Shk !know this class of object       */
+#define SHK_MATCH       1       /* Shk is expert                        */
+#define SHK_GENERAL     2       /* Shk runs a general store             */
+
+/*
+ * FUNCTION shk_class_match
+ *
+ * Return TRUE if a object class matches the shop type.
+ * I.e. shk_class_match(WEAPON_CLASS, shkp)
+ *
+ * Return:      SHK_MATCH, SHK_NOMATCH, SHK_GENERAL
+ */
+
+#define shk_class_match(class, shkp) \
+        ((shtypes[ESHK(shkp)->shoptype-SHOPBASE].symb == RANDOM_CLASS) ? \
+                SHK_GENERAL : \
+         ((shtypes[ESHK(shkp)->shoptype-SHOPBASE].symb == class) ? \
+                SHK_MATCH : SHK_NOMATCH))
+
+#define SHK_ID_BASIC    01L
+#define SHK_ID_PREMIUM  02L
+#define SHK_UNCURSE     010L
+#define SHK_APPRAISE    0100L
+#define SHK_SPECIAL_A   01000L
+#define SHK_SPECIAL_B   02000L
+#define SHK_SPECIAL_C   04000L
 
 #if 0 /* moved to decl.h so that makedefs.c won't see them */
 extern const struct class_sym

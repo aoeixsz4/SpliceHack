@@ -233,6 +233,9 @@ static struct trobj Tinopener[] = { { TIN_OPENER, 0, TOOL_CLASS, 1, 0 },
                                     { 0, 0, 0, 0, 0 } };
 static struct trobj Sewingkit[] = { { SEWING_KIT, 0, TOOL_CLASS, 1, 0 },
                                     { 0, 0, 0, 0, 0 } };
+
+static struct trobj Halo[] = { { HALO, 0, ARMOR_CLASS, 1, UNDEF_BLESS },
+                                    { 0, 0, 0, 0, 0 } };
 static struct trobj Magicmarker[] = { { MAGIC_MARKER, UNDEF_SPE, TOOL_CLASS,
                                         1, 0 },
                                       { 0, 0, 0, 0, 0 } };
@@ -252,6 +255,8 @@ static struct trobj Wishing[] = { { WAN_WISHING, 3, WAND_CLASS, 1, 0 },
                                   { 0, 0, 0, 0, 0 } };
 static struct trobj Money[] = { { GOLD_PIECE, 0, COIN_CLASS, 1, 0 },
                                 { 0, 0, 0, 0, 0 } };
+static struct trobj Booze[] = { { POT_BOOZE, 0, POTION_CLASS, 1, 0 },
+				{0, 0, 0, 0, 0} };
 
 /* race-based substitutions for initial inventory;
    the weaker cloak for elven rangers is intentional--they shoot better */
@@ -286,8 +291,9 @@ static struct inv_sub {
     { PM_DWARF, SHORT_SWORD, DWARVISH_SHORT_SWORD },
     { PM_DWARF, HELMET, DWARVISH_HELM },
     /* { PM_DWARF, SMALL_SHIELD, DWARVISH_ROUNDSHIELD }, */
-    /* { PM_DWARF, PICK_AXE, DWARVISH_MATTOCK }, */
+    { PM_DWARF, PICK_AXE, DWARVISH_MATTOCK },
     { PM_DWARF, LEMBAS_WAFER, CRAM_RATION },
+    { PM_DWARF, POT_FRUIT_JUICE, POT_BOOZE },
     { PM_GNOME, BOW, CROSSBOW },
     { PM_GNOME, ARROW, CROSSBOW_BOLT },
     { PM_DROW, DAGGER, DARK_ELVEN_DAGGER },
@@ -322,6 +328,7 @@ static const struct def_skill Skill_A[] = {
     { P_TWO_WEAPON_COMBAT, P_BASIC },
     { P_BARE_HANDED_COMBAT, P_EXPERT },
     { P_COOKING, P_EXPERT },
+    { P_FIREARM, P_SKILLED },
     { P_NONE, 0 }
 };
 static const struct def_skill Skill_B[] = {
@@ -585,6 +592,7 @@ static const struct def_skill Skill_Pir[] = {
     { P_TWO_WEAPON_COMBAT, P_SKILLED },
     { P_BARE_HANDED_COMBAT, P_EXPERT },
     { P_COOKING, P_EXPERT }, /* pirate chefs */
+    { P_FIREARM, P_EXPERT },
     { P_NONE, 0 }
 };
 static const struct def_skill Skill_R[] = {
@@ -641,6 +649,7 @@ static const struct def_skill Skill_Ran[] = {
     { P_RIDING, P_BASIC },
     { P_BARE_HANDED_COMBAT, P_BASIC },
     { P_COOKING, P_SKILLED },
+    { P_FIREARM, P_EXPERT },
     { P_NONE, 0 }
 };
 static const struct def_skill Skill_S[] = {
@@ -703,6 +712,7 @@ static const struct def_skill Skill_T[] = {
     { P_TWO_WEAPON_COMBAT, P_SKILLED },
     { P_BARE_HANDED_COMBAT, P_SKILLED },
     { P_COOKING, P_EXPERT },
+    { P_FIREARM, P_BASIC },
     { P_NONE, 0 }
 };
 static const struct def_skill Skill_V[] = {
@@ -1104,6 +1114,8 @@ u_init()
         knows_object(DWARVISH_RING_MAIL);
         knows_object(DWARVISH_CLOAK);
         knows_object(DWARVISH_ROUNDSHIELD);
+        /* Dwarves begin the game with booze */
+        ini_inv(Booze);
         break;
 
     case PM_CHANGELING:
@@ -1143,6 +1155,10 @@ u_init()
 
     case PM_HUMAN_WEREWOLF:
         set_ulycn(PM_WEREWOLF);
+        break;
+    
+    case PM_MINOR_ANGEL:
+        ini_inv(Halo);
         break;
 
     default: /* impossible */
@@ -1219,7 +1235,7 @@ u_init()
   		attkptr->damn = 2;				/* we're almost sure to get this wrong first time */
   		attkptr->damd = 10;				/* either too high or too low */
   	}
-  	shambler->msize = rn2(MZ_GIGANTIC+1);			/* any size */
+  	shambler->msize = rn2(MZ_HUGE+1);			/* any size */
   	shambler->cwt = 20;					/* fortunately moot as it's flagged NOCORPSE */
   	shambler->cnutrit = 20;					/* see above */
   	shambler->msound = rn2(MS_HUMANOID);			/* any but the specials */
@@ -1478,6 +1494,14 @@ register struct trobj *trop;
         if (g.urace.malenum == PM_VAMPIRE && obj->otyp == FOOD_RATION) {
             dealloc_obj(obj);
             obj = mksobj(POT_VAMPIRE_BLOOD, TRUE, FALSE);
+        }
+
+        /* angels don't get helmets */
+        if (g.urace.malenum == PM_MINOR_ANGEL && is_helmet(obj) 
+            && obj->otyp != HALO) {
+            dealloc_obj(obj);
+            trop++;
+            continue;
         }
 
         /* nudist gets no armor */

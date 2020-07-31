@@ -1,4 +1,4 @@
-/* NetHack 3.6	do_wear.c	$NHDT-Date: 1586125907 2020/04/05 22:31:47 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.130 $ */
+/* NetHack 3.6	do_wear.c	$NHDT-Date: 1592951498 2020/06/23 22:31:38 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.133 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -430,6 +430,7 @@ Helmet_on(VOID_ARGS)
     case HELM_OF_OPAQUE_THOUGHTS:
     case HELM_OF_BRILLIANCE:
     case PUMPKIN:
+    case HALO:
         adj_abon(uarmh, uarmh->spe);
         break;
     case CORNUTHAUM:
@@ -498,8 +499,8 @@ Helmet_off(VOID_ARGS)
     case ORCISH_HELM:
     case HELM_OF_OPAQUE_THOUGHTS:
     case PUMPKIN:
-        break;
     case DUNCE_CAP:
+    case HALO:
         g.context.botl = 1;
         break;
     case CORNUTHAUM:
@@ -1731,6 +1732,10 @@ struct obj *otmp;
             You("can't.  %s cursed.", use_plural ? "They are" : "It is");
         set_bknown(otmp, 1);
         return 1;
+    } else if (otmp->otyp == HALO) {
+        /* An obtuse hint that other monsters could steal your halo. */
+        You("can't remove your own halo!");
+        return 1;
     }
     return 0;
 }
@@ -2217,13 +2222,13 @@ struct obj *obj;
          * to change so armor's +/- value is evident via the status line.
          * We used to set it here because of that, but then it would stick
          * if a nymph stole the armor before it was fully worn.  Delay it
-         * until the aftermv action.  The player may still know this armor's
+         * until the afternmv action.  The player may still know this armor's
          * +/- amount if donning gets interrupted, but the hero won't.
          *
         obj->known = 1;
          */
         setworn(obj, mask);
-        /* if there's no delay, we'll execute 'aftermv' immediately */
+        /* if there's no delay, we'll execute 'afternmv' immediately */
         if (obj == uarm)
             g.afternmv = Armor_on;
         else if (obj == uarmh)
@@ -2247,7 +2252,7 @@ struct obj *obj;
             g.multi_reason = "dressing up";
             g.nomovemsg = "You finish your dressing maneuver.";
         } else {
-            unmul(""); /* call aftermv, clear it+nomovemsg+multi_reason */
+            unmul(""); /* call afternmv, clear it+nomovemsg+multi_reason */
             on_msg(obj);
         }
         g.context.takeoff.mask = g.context.takeoff.what = 0L;

@@ -1,4 +1,4 @@
-/* NetHack 3.6	mkobj.c	$NHDT-Date: 1590870787 2020/05/30 20:33:07 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.179 $ */
+/* NetHack 3.6	mkobj.c	$NHDT-Date: 1593306908 2020/06/28 01:15:08 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.181 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Derek S. Ray, 2015. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -884,7 +884,8 @@ boolean artif;
                                  + (otmp->otyp - GLOB_OF_GRAY_OOZE);
             } else {
                 if (otmp->otyp != CORPSE && otmp->otyp != MEAT_RING
-                    && otmp->otyp != KELP_FROND && !rn2(6)) {
+                    && otmp->otyp != PUMPKIN && otmp->otyp != KELP_FROND
+                    && !rn2(6)) {
                     otmp->quan = 2L;
                 }
             }
@@ -992,9 +993,6 @@ boolean artif;
             case DRUM_OF_EARTHQUAKE:
                 otmp->spe = rn1(5, 4);
                 break;
-            case ART_POSEIDON_S_TRIDENT:
-                otmp->oerodeproof = TRUE;
-                break;
             }
             break;
         case AMULET_CLASS:
@@ -1050,7 +1048,7 @@ boolean artif;
                 otmp->oerodeproof = otmp->rknown = 1;
 #endif
             }
-            if (otmp->otyp == ROBE_OF_STASIS) {
+            if (otmp->otyp == ROBE_OF_STASIS || otmp->otyp == HALO) {
                 otmp->oerodeproof = 1;
             }
             break;
@@ -1797,6 +1795,7 @@ struct monst *mtmp;
     if (!has_omonst(obj))
         newomonst(obj);
     if (has_omonst(obj)) {
+        int baselevel = mtmp->data->mlevel;
         struct monst *mtmp2 = OMONST(obj);
 
         *mtmp2 = *mtmp;
@@ -1811,6 +1810,19 @@ struct monst *mtmp;
         mtmp2->minvent = (struct obj *) 0;
         if (mtmp->mextra)
             copy_mextra(mtmp2, mtmp);
+        /* if mtmp is a long worm with segments, its saved traits will
+           be one without any segments */
+        mtmp2->wormno = 0;
+        /* mtmp might have been killed by repeated life draining; make sure
+           mtmp2 can survive if revived ('baselevel' will be 0 for 1d4 mon) */
+        if (mtmp2->mhpmax <= baselevel)
+            mtmp2->mhpmax = baselevel + 1;
+        /* mtmp is assumed to be dead but we don't kill it or its saved
+           traits, just force those to have a sane value for current HP */
+        if (mtmp2->mhp > mtmp2->mhpmax)
+            mtmp2->mhp = mtmp2->mhpmax;
+        if (mtmp2->mhp < 1)
+            mtmp2->mhp = 0;
     }
     return obj;
 }
@@ -2912,7 +2924,7 @@ struct obj *obj;
            be wielded/alt-wielded/quivered, so tests on those are limited */
         what = 0;
         if (owornmask & W_ARMOR) {
-            if (obj->oclass != ARMOR_CLASS)
+            if (obj->oclass != ARMOR_CLASS && obj->otyp != PUMPKIN)
                 what = "armor";
             /* 3.6: dragon scale mail reverts to dragon scales when
                becoming embedded in poly'd hero's skin */
@@ -3187,6 +3199,17 @@ static const struct icp metal_materials[] = {
     {  1, GEMSTONE}
 };
 
+/* for objects related to firearms */
+static const struct icp firearm_materials[] = {
+    {645, IRON},
+    {125, SILVER},
+    {125, COPPER},
+    { 75, MITHRIL},
+    { 10, GOLD},
+    { 10, PLATINUM},
+    { 10, ADAMANTINE},
+};
+
 /* Reflectable items - the shield of reflection; anything
  * that can hold a polish */
 static const struct icp shiny_materials[] = {
@@ -3363,11 +3386,11 @@ struct obj* obj;
      * list exists. */
     if (is_elven_obj(obj) && default_material != CLOTH) {
         return elven_materials;
-    }
-    else if (is_dwarvish_obj(obj) && default_material != CLOTH) {
+    } else if (is_dwarvish_obj(obj) && default_material != CLOTH) {
         return dwarvish_materials;
-    }
-    else if (obj->oclass == AMULET_CLASS && otyp != AMULET_OF_YENDOR
+    } else if (is_firearm(obj) || is_bullet(obj) || is_grenade(obj)) {
+        return firearm_materials;
+    } else if (obj->oclass == AMULET_CLASS && otyp != AMULET_OF_YENDOR
              && otyp != FAKE_AMULET_OF_YENDOR) {
         /* could use metal_materials too */
         return shiny_materials;

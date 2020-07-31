@@ -1,4 +1,4 @@
-/* NetHack 3.6	read.c	$NHDT-Date: 1590343774 2020/05/24 18:09:34 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.197 $ */
+/* NetHack 3.6	read.c	$NHDT-Date: 1592875138 2020/06/23 01:18:58 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.198 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -379,7 +379,11 @@ doread()
     } else if (Blind && (scroll->otyp != SPE_BOOK_OF_THE_DEAD)) {
         const char *what = 0;
 
-        if (scroll->oclass == SPBOOK_CLASS)
+        if (scroll->otyp == SPE_NOVEL)
+            /* unseen novels are already distinguishable from unseen
+               spellbooks so this isn't revealing any extra information */
+            what = "words";
+        else if (scroll->oclass == SPBOOK_CLASS)
             what = "mystic runes";
         else if (!scroll->dknown) {
             if (Role_if(PM_CARTOMANCER))
@@ -478,17 +482,6 @@ doread()
         scroll->in_use = FALSE;
         if (scroll->otyp != SCR_BLANK_PAPER  && !scroll->oartifact)
             useup(scroll);
-    }
-    /* */
-    if (Role_if(PM_CARTOMANCER) && scroll->otyp != SCR_TIME) {
-        struct monst *mtmp, *mtmp2;
-        for (mtmp = fmon; mtmp; mtmp = mtmp2) {
-            mtmp2 = mtmp->nmon;
-            if (DEADMONSTER(mtmp) || mtmp->mpeaceful || mtmp->mtame
-                || distu(mtmp->mx, mtmp->my) > 16)
-                continue;
-            card_response(mtmp);
-        }
     }
     return 1;
 }
@@ -1498,12 +1491,13 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
     case SPE_CREATE_MONSTER: {
         register struct monst *mtmp;
         if (sobj->corpsenm != NON_PM) {
-            mtmp = makemon(&mons[sobj->corpsenm], u.ux, u.uy, MM_EDOG | MM_NOERID | NO_MINVENT);
+            mtmp = makemon(&mons[sobj->corpsenm], u.ux, u.uy, 
+                MM_EDOG | MM_NOERID | NO_MINVENT | MM_NOCOUNTBIRTH);
             if (!mtmp)
                 break;
             if (!scursed)
                 initedog(mtmp);
-            mtmp->mfading = Role_if(PM_CARTOMANCER) ? rn1(70 + 4 * u.ulevel, 30) : rn1(20, 30);
+            mtmp->mfading = Role_if(PM_CARTOMANCER) ? rn1(15, 4 * u.ulevel) : rn1(10, 5);
             g.known = TRUE;
             break;
         }
@@ -1877,13 +1871,14 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
                 losehp(d(3, 4), "scroll of air", KILLED_BY_AN);
             } else {
                 strange_feeling(sobj, "You feel oddly breathless.");
+                sobj = 0;
             }
             break;
         } else if (sblessed)
             i = 4;
         else
             i = 2;
-        /* Ideally this should remove poison gas as well. */
+        /* TODO: Remove poison gas as well. */
         pline("A tornado whips up around you!");
         g.known = TRUE;
         for (mtmp = fmon; mtmp; mtmp = mtmp2) {
@@ -1896,9 +1891,10 @@ struct obj *sobj; /* scroll, or fake spellbook object for scroll-like spell */
         break;
     }
     case SCR_WARP_WEAPON:
-        if (!uwep)
+        if (!uwep) {
+            strange_feeling(sobj, "You itch for a weapon.");
             sobj = 0; /* nothing enchanted: strange_feeling -> useup */
-        else if (confused || scursed) {
+        } else if (confused || scursed) {
             pline("%s with a sickly green light!", Yobjnam2(uwep, "glow"));
             curse(uwep);
             uwep->oerodeproof = 0;

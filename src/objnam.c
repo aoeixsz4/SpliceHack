@@ -701,7 +701,7 @@ unsigned cxn_flags; /* bitmask of CXN_xxx values */
         if (!dknown)
             break;
         if (nn && obj->corpsenm != NON_PM) {
-            Strcat(buf, " of summon ");
+            Strcat(buf, " - ");
             Strcat(buf, mons[obj->corpsenm].mname);
         } else if (nn) {
             Strcat(buf, " of ");
@@ -1165,6 +1165,9 @@ unsigned doname_flags;
             Strcat(prefix, sitoa(obj->spe));
             Strcat(prefix, " ");
         }
+
+        if (is_grenade(obj))
+		    if (obj->oarmed) Strcat(bp, " (armed)");
         break;
     case TOOL_CLASS:
         if (obj->owornmask & (W_TOOL | W_SADDLE)) { /* blindfold */
@@ -2925,6 +2928,10 @@ static NEARDATA const struct o_range o_ranges[] = {
     { "dragon scale mail", ARMOR_CLASS, GRAY_DRAGON_SCALE_MAIL,
       VOID_DRAGON_SCALE_MAIL },
     { "sword", WEAPON_CLASS, SHORT_SWORD, KATANA },
+    { "firearm", 	WEAPON_CLASS, PISTOL, AUTO_SHOTGUN },
+	{ "gun", 	WEAPON_CLASS, PISTOL, AUTO_SHOTGUN },
+    { "machine gun", WEAPON_CLASS, SUBMACHINE_GUN, HEAVY_MACHINE_GUN },
+    { "grenade", WEAPON_CLASS, FRAG_GRENADE, GAS_GRENADE },
     { "venom", VENOM_CLASS, BLINDING_VENOM, ACID_VENOM },
     { "gray stone", GEM_CLASS, LUCKSTONE, FLINT },
     { "grey stone", GEM_CLASS, LUCKSTONE, FLINT },
@@ -2982,6 +2989,12 @@ static struct alt_spellings {
     { "moon stone", MOONSTONE },
     { "touch stone", TOUCHSTONE },
     { "flintstone", FLINT },
+    /* grenades and firearms */
+    { "handgun", PISTOL },
+	{ "hand gun", PISTOL },
+	{ "revolver", PISTOL },
+    { "hand grenade", FRAG_GRENADE },
+    { "shell", SHOTGUN_SHELL },
     { (const char *) 0, 0 },
 };
 
@@ -3633,7 +3646,8 @@ struct obj *no_wish;
         } else {
             /* check for materials */
             if (!strncmpi(bp, "silver dragon", l = 13)
-                || !strncmpi(bp, "gold dragon", l= 11)
+                || !strncmpi(bp, "gold dragon", l = 11)
+                || !strncmpi(bp, "gold detection", l = 14)
                 || !strncmpi(bp, "silver ring", l = 11)
                 || !strncmpi(bp, "gold ring", l = 9)
                 || !strncmpi(bp, "iron ball", l = 9)
@@ -4339,7 +4353,7 @@ struct obj *no_wish;
     }
 
     /* if player specified a reasonable count, maybe honor it */
-    if (cnt > 1 && objects[typ].oc_merge
+    if (cnt > 0 && objects[typ].oc_merge
         && (wizard || cnt < rnd(6) || (cnt <= 7 && Is_candle(otmp))
             || (cnt <= 20 && ((oclass == WEAPON_CLASS && is_ammo(otmp))
                               || typ == ROCK || is_missile(otmp))))) {
@@ -4685,7 +4699,9 @@ Cartomancer_rarity(otyp)
 int otyp;
 {
     int price = objects[otyp].oc_cost;
-    if (price < 60) {
+    if (otyp == SCR_CREATE_MONSTER) {
+        return "monster card";
+    } else if (price < 60) {
         return "common spell card";
     } else if (price < 100) {
         return "uncommon spell card";

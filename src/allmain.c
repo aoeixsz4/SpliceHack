@@ -1,4 +1,4 @@
-/* NetHack 3.6	allmain.c	$NHDT-Date: 1584405115 2020/03/17 00:31:55 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.143 $ */
+/* NetHack 3.6	allmain.c	$NHDT-Date: 1593953342 2020/07/05 12:49:02 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.144 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -669,10 +669,6 @@ newgame()
 {
     int i;
 
-#ifdef MFLOPPY
-    gameDiskPrompt();
-#endif
-
     g.context.botlx = TRUE;
     g.context.ident = 1;
     g.context.stethoscope_move = -1L;
@@ -730,6 +726,9 @@ newgame()
         flush_screen(1);
         if (Role_if(PM_CONVICT)) {
 		    com_pager("legacy_convict");
+        } else if (Race_if(PM_MINOR_ANGEL)) {
+            com_pager("legacy_angel");
+            com_pager("angel_edicts");
         } else {
 		    com_pager("legacy");
         }

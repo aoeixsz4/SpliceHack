@@ -1114,14 +1114,6 @@ register struct obj *obj;
 {
     /* Note:  This works correctly for containers because they (containers)
        don't merge. */
-    /* Cartomancers occasionally keep cards they play. */
-    if (obj->oclass == SCROLL_CLASS && Role_if(PM_CARTOMANCER) && !rn2(10)) {
-        pline("But wait, the card didn't vanish after all!");
-        You("actually shuffled the card back into your deck!");
-        obj->in_use = FALSE;
-        update_inventory();
-        return;
-    }
     if (obj->quan > 1L) {
         obj->in_use = FALSE; /* no longer in use */
         obj->quan--;
@@ -1619,6 +1611,10 @@ register const char *let, *word;
                  /* Picks, axes, pole-weapons, bullwhips */
                  && ((otmp->oclass == WEAPON_CLASS
                       && !is_pick(otmp) && !is_axe(otmp)
+                      && otyp != SUBMACHINE_GUN
+                      && otyp != AUTO_SHOTGUN
+                      && otyp != FRAG_GRENADE
+                      && otyp != GAS_GRENADE
                       && !is_pole(otmp) && otyp != BULLWHIP
                       && otyp != RAZOR_WHIP)
                      || (otmp->oclass == POTION_CLASS
@@ -3750,6 +3746,10 @@ register struct obj *otmp, *obj;
         if (obj->corpsenm != otmp->corpsenm)
             return FALSE;
     }
+
+    /* armed grenades do not merge */
+	if ((obj->timed || otmp->timed) && is_grenade(obj))
+	    return FALSE;
 
     /* hatching eggs don't merge; ditto for revivable corpses */
     if ((obj->otyp == EGG && (obj->timed || otmp->timed))

@@ -1641,13 +1641,20 @@ NEARDATA struct permonst mons_init[] = {
     /*
      * Angels and other lawful minions
      */
-     MON("minor angel", S_ANGEL, LVL(0, 12, 10, 0, 0), G_NOGEN,
+    MON("minor angel", S_ANGEL, LVL(0, 12, 10, 0, 0), G_NOGEN,
          A(ATTK(AT_WEAP, AD_PHYS, 1, 6), NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK,
            NO_ATTK),
          SIZ(WT_HUMAN, 400, MS_CUSS, MZ_HUMAN), 0, 0,
          M1_HUMANOID | M1_OMNIVORE | M1_FLY,
          M2_NOPOLY | M2_MINION | M2_STRONG | M2_COLLECT, M3_INFRAVISIBLE |
          M3_INFRAVISION, MH_ANGEL, 2, HI_DOMESTIC),
+    MON("fallen angel", S_ANGEL, LVL(0, 12, 10, 0, -3), G_NOGEN,
+         A(ATTK(AT_WEAP, AD_PHYS, 1, 6), ATTK(AT_WEAP, AD_PHYS, 1, 6), 
+           NO_ATTK, NO_ATTK, NO_ATTK, NO_ATTK),
+         SIZ(WT_HUMAN, 400, MS_CUSS, MZ_HUMAN), 0, 0,
+         M1_HUMANOID | M1_OMNIVORE,
+         M2_COLLECT | M2_NOPOLY, M3_INFRAVISIBLE | M3_INFRAVISION, MH_ANGEL, 
+         2, HI_DOMESTIC),
     MON("couatl", S_ANGEL, LVL(8, 10, 5, 30, 7),
         (G_NOHELL | G_SGROUP | G_NOCORPSE | 1),
         A(ATTK(AT_BITE, AD_DRST, 2, 4), ATTK(AT_BITE, AD_PHYS, 1, 3),
@@ -3189,7 +3196,7 @@ struct permonst _mons2[] = {
     	A(ATTK(AT_CLAW, AD_PHYS, 3, 4), ATTK(AT_CLAW, AD_PHYS, 3, 4),
     	  ATTK(AT_BITE, AD_CONF, 2, 5), ATTK(AT_GAZE, AD_HNGY, 0, 0),
     	  NO_ATTK, NO_ATTK),
-    	SIZ(1200, 500, MS_SILENT, MZ_LARGE), 0, 0,
+    	SIZ(1200, 1, MS_SILENT, MZ_LARGE), 0, 0,
     	M1_CARNIVORE | M1_TUNNEL, M2_STRONG, M3_INFRAVISIBLE, 0, 15, CLR_RED),
     /*
      * Placeholder for the random creature...
@@ -4276,7 +4283,7 @@ struct permonst _mons2[] = {
             | M2_LORD | M2_MALE | M2_COLLECT,
         M3_WANTSAMUL | M3_INFRAVISIBLE | M3_INFRAVISION, MH_DEMON, 28, HI_LORD),
     MON("Pazuzu", S_DEMON, LVL(53, 18, -12, 65, 15),
-        (G_HELL | G_NOGEN | G_UNIQ),
+        (G_HELL | G_NOGEN | G_UNIQ | G_NOCORPSE),
         A(ATTK(AT_WEAP, AD_PHYS, 3, 6), ATTK(AT_WEAP, AD_PHYS, 3, 6), 
           ATTK(AT_BITE, AD_WIND, 2, 6), ATTK(AT_BREA, AD_DRST, 4, 6), 
           NO_ATTK, NO_ATTK),

@@ -2,6 +2,37 @@
 
                             Version 0.7.2
 
+New Items
+- Scabbard
+  - Base item type for Avalon.
+- Frag Grenade
+- Gas Grenade
+  - From SLASH'EM.
+  - The following monsters have grenades:
+    - Captain: 50/50 chance of a gas or frag grenade.
+    - Watch Captain: 50/50 chance of a gas or frag grenade.
+    - One-Eyed Sam: 3 gas grenades.
+    - Orcish Warlord: 1 frag grenade.
+    - All Pirates: 1/2 chance of a frag grenade.
+    - All Mercernaries: 1/6 chance of a random grenade.
+- Pistol
+- Shotgun
+- Auto shotgun
+- Submachine gun
+- Heavy machine gun
+- Rifle
+- Sniper rifle
+- Shotgun shell
+- Bullet
+  - Ported a subset of firearms form SLASH'EM.
+  - Shopkeepers are equipped with shotguns.
+  - A few differences:
+    - You can hear distant gunfire.
+    - Soldiers do not spawn with guns.
+    - Monsters will attempt to use pistols, shotguns, and auto
+      shotguns as melee weapons.
+    - Bullets and guns are affected by the object materials patch.
+
 New Monsters
 - Servals
   - Low-level cats that are capable of leaping.
@@ -11,6 +42,16 @@ New Monsters
 AI
 - Monsters can light potions of oil, and hurl lit potions.
 - Monsters will use wands of teleportation offensively.
+
+Shopkeepers
+- Shopkeeper services, originally from SLASH'EM, are now available.
+- Altered the appraisal service, since all weapon stats can be looked
+  up in game.
+
+Visual
+- Tiled mode now includes an indicator to denote if a monster is part of a rider/steed
+  pair.
+- Added a new splash screen to the Windows build.
 
 QOL
 - Show the carrying capacity of a player and the number of slots in their
@@ -60,15 +101,33 @@ New Artifacts
 - Idspike
   - Unaligned athame.
   - Grants psychic resistance.
-  - Deals double damage 
+  - Deals double damage.
 - Chains of Malcanthet
   - Bane of angels. Glows red in their presence.
   - Can paralyze monsters when hitting them.
   - Sets charisma to 25.
+- Balmung
+  - Grants the wielder fire resistance.
+  - Automatically destroys a random piece of armor upon hitting an opponent.
+  - Resists all forms of damage and destruction.
+- Avalon
+  - Scabbard.
+  - Provides hungerless regeneration when carried.
+  - Can be invoked to heal half of current form's max hit points.
+  - Allows the user to invoke Excalibur.
+- Hand Grenade of Antioch
+  - Lawful-aligned.
+  - Explodes for 50d6 magic damage.
+  - The fuse is ALWAYS three turns long. Not five.
 
 Artifact Changes
 - Anaconda
   - Removed.
+- Unlimited Moon
+  - Removed.
+- Excalibur
+  - Can be invoked for an incredibly powerful fire blast, but only when the user
+    is carrying Avalon.
 - Giantslayer
   - Warns the player of giants.
   - Makes the player stable, so they cannot be knocked back or hurtle in any way.
@@ -108,6 +167,7 @@ Artifact Changes
 - Seafoam
   - Change name to Poseidon's Trident
   - Invoking it grants water walking and causes an earthquake.
+  - No longer erodeproof.
 - Imhullu
   - Grants stability.
   - Hitting a monster with a tornado does 3d4 bonus damage, takes place 1/3 of
@@ -129,11 +189,58 @@ Artifact Changes
   - Can no longer be thrown.
   - Changed damage.
   - Has +100 to-hit.
+- Longbow of Diana
+  - Base material is silver.
+  - Always gives a +1 multishot and damage bonus to the user.
+- Heart of Ahrimahn
+  - Grants teleport control.
 
+Race Changes
+- Dwarf
+  - Dwarves start all games with some booze.
+  - Dwarves receive mattocks instead of picks in starting inventories.
+- Angel
+  - Angels receive a number of edicts upon starting the game:
+    - Do not harm the innocent.
+    - Do not steal.
+    - Do not engage in amorous activities with demons.
+  - Shopkeepers refer to the player as "Radiant One." Fallen angels are referred to
+    as "fallen one."
+  - Angels and fallen angels receive slightly altered messages upon beginning the game
+    and upon ascending.
+  - Angel flight is now sourced from creature form, rather than an intrinsic racial trait.
+  - Angels receive a halo during character creation. Halos provide 1 AC, and protection.
+    It cannot be removed by the player, and it cannot be wished for or found in bones.
+  - Breaking an edict causes the player to fall from grace. Falling from grace has the
+    following effects:
+      - The player's halo, if any, is destroyed.
+      - The player polymorphs into a fallen angel, meaning that they can no longer fly.
+      - The player gains intrinsic unchanging.
+      - In the endgame, fallen angels are accosted by archons, rather than
+        sins.
+  - Falling from grace can actually be a strategic option. Fallen angels have multiple
+    weapon attacks, are always equal or greater to the level of the player when they fell,
+    and the player can wear headgear other than halos.
+
+Role Changes
+- Dragonmaster
+  - All dragonmasters start with basic skill in riding.
+- Cartomancer
+  - Removed the card response feature, since it incentivized players not to use scrolls.
+  - Removed the chance not to use up scrolls when reading them.
+  - Any monster killed by a cartomancer has a 50% chance of dropping as a spell card.
+  - Fading monsters summoned by scrolls remain for a much shorter period of time.
+  - Updated summon card naming.
 
 Miscelaneous
 - Kicking a tree has a chance of spawning a serval or (very rarely) a jaguar.
 - All mindless monsters resist all sources of psychic damage.
+- Remove artifact chants.
+- Pazuzu no longer leaves a corpse.
+- Hunger hulks provide a single point of nutrition. Since they take several turns to
+  eat, eating a hunger hulk corpse will actually make you hungrier. Fantastic YANI
+  from aosdict.
+- Prevent boulders from being pushed while running (RojjaCebolla)
 
 Balance
 - Being deaf does not make you resistant to sonic attacks.
@@ -142,6 +249,23 @@ Balance
 Bug Fixes
 - Correctly track the celibate conduct.
 - Correctly track sokoban guilt when liquid leaping.
+- Override beehive wall color in the wizard's tower.
+- All vampiric monsters are harmed by silver, including the player and vampiric mind
+  flayers, which in previous versions were unaffected.
+- Fixed a few double livelog issues which could affect public servers.
+- Fixed a bad mplayer panic when spawning a convict player monster.
+- Fixed an impossible when spawning shambling horrors.
+- Minor potion of reflection feedback fix.
+- Fixed an enormous number of memory issues and crashes (thanks to Demo).
+- Show correct orientation in options list (Entrez)
+- Fix edge case in blood magic (Entrez)
+- Fix selfpoly'd AD_RBRE (Entrez)
+- Fix monster and player reflection edge cases and messages (Entrez)
+- Fixed conflict taking effect regardless of LOS, but only when monsters are using
+  throwing weapons.
+- Fixed segfault caused by vanishing monsters.
+- Prevented cartomancer grinding via killing fading monsters repeatedly.
+- Do not count births of fading monsters.
 
 Sounds
 - Add more sounds for monsters fighting than just noises in the distance.

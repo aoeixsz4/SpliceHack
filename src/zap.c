@@ -1,4 +1,4 @@
-/* NetHack 3.6	zap.c	$NHDT-Date: 1589491666 2020/05/14 21:27:46 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.340 $ */
+/* NetHack 3.6	zap.c	$NHDT-Date: 1593772051 2020/07/03 10:27:31 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.344 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2013. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -847,6 +847,12 @@ boolean adjacentok; /* False: at obj's spot only, True: nearby is allowed */
             return (struct monst *) 0;
         mtmp = makemon(mtmp2->data, cc->x, cc->y,
                        (NO_MINVENT | MM_NOWAIT | MM_NOCOUNTBIRTH
+                        /* in case mtmp2 is a long worm; saved traits for
+                           long worm don't include tail segments so don't
+                           give mtmp any; it will be given a new 'wormno'
+                           though (unless those are exhausted) so be able
+                           to grow new tail segments */
+                        | MM_NOTAIL
                         | (adjacentok ? MM_ADJACENTOK : 0)));
         if (!mtmp) {
             /* mtmp2 is a copy of obj's object->oextra->omonst extension
@@ -855,8 +861,23 @@ boolean adjacentok; /* False: at obj's spot only, True: nearby is allowed */
             return (struct monst *) 0;
         }
 
-        /* heal the monster */
-        if (mtmp->mhpmax > mtmp2->mhpmax && is_rider(mtmp2->data))
+        /* heal the monster; lower than normal level might come from
+           adj_lev() but we assume it has come from 'mtmp' being level
+           drained before finally killed; give a chance to restore
+           some levels so that trolls and Riders can't be drained to
+           level 0 and then trivially killed repeatedly */
+        if ((int) mtmp->m_lev < mtmp->data->mlevel) {
+            int ltmp = rnd(mtmp->data->mlevel + 1);
+
+            if (ltmp > (int) mtmp->m_lev) {
+                while ((int) mtmp->m_lev < ltmp) {
+                    mtmp->m_lev++;
+                    mtmp->mhpmax += monhp_per_lvl(mtmp);
+                }
+                mtmp2->m_lev = mtmp->m_lev;
+            }
+        }
+        if (mtmp->mhpmax > mtmp2->mhpmax) /* &&is_rider(mtmp2->data)*/
             mtmp2->mhpmax = mtmp->mhpmax;
         mtmp2->mhp = mtmp2->mhpmax;
         /* Get these ones from mtmp */
@@ -1493,7 +1514,8 @@ int ochance, achance; /* percent chance for ordinary objects, artifacts */
         || obj->otyp == CANDELABRUM_OF_INVOCATION
         || obj->otyp == BELL_OF_OPENING
         || obj->otyp == ROBE_OF_STASIS
-        || (obj->otyp == CORPSE && is_rider(&mons[obj->corpsenm]))) {
+        || (obj->otyp == CORPSE && is_rider(&mons[obj->corpsenm]))
+        || (obj->oartifact && obj->oartifact == ART_BALMUNG)) {
         return TRUE;
     } else {
         int chance = rn2(100);
@@ -1868,6 +1890,11 @@ int id;
         otmp->quan = 1L;
 
     switch (otmp->oclass) {
+    case ARMOR_CLASS:
+        if (otmp->otyp == HALO) {
+            otmp->otyp = HELMET;
+        }
+        break;
     case TOOL_CLASS:
         if (otmp->otyp == MAGIC_LAMP) {
             otmp->otyp = OIL_LAMP;
@@ -3255,7 +3282,8 @@ void
 ubreatheu(mattk)
 struct attack *mattk;
 {
-    int dtyp = 20 + mattk->adtyp - 1;      /* breath by hero */
+    int typ = (mattk->adtyp == AD_RBRE) ? rnd(AD_PSYC) : mattk->adtyp; /* breath by hero */
+    int dtyp = 20 + typ - 1;
     const char *fltxt = flash_types[dtyp]; /* blast of <something> */
 
     zhitu(dtyp, mattk->damn, fltxt, u.ux, u.uy);
@@ -5615,8 +5643,12 @@ register struct obj *obj; /* no texts here! */
     if (obj->where == OBJ_FLOOR) {
         obj_extract_self(obj); /* move rocks back on top */
         place_object(obj, obj->ox, obj->oy);
-        if (!does_block(obj->ox, obj->oy, &levl[obj->ox][obj->oy]))
+        if (!does_block(obj->ox, obj->oy, &levl[obj->ox][obj->oy])) {
             unblock_point(obj->ox, obj->oy);
+            /* need immediate update in case this is a striking/force bolt
+               zap that is about hit more things */
+            vision_recalc(0);
+        }
         if (cansee(obj->ox, obj->oy))
             newsym(obj->ox, obj->oy);
     }

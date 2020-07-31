@@ -103,6 +103,16 @@ OBJECT(OBJ("strange object", None),
            BITS(kn, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, sub, metal),      \
            0, WEAPON_CLASS, prob, 0, wt,                            \
            cost, 2, 2, hitbon, 0, wt, color)
+#define BULLET(name,app,kn,prob,wt,cost,sdam,ldam,hitbon,ammotyp,typ,metal,sub,color) \
+	OBJECT( \
+		OBJ(name,app), BITS(kn,1,1,0,0,1,0,0,0,0,typ,sub,metal), 0, \
+		WEAPON_CLASS, prob, 0, \
+		wt, cost, sdam, ldam, hitbon, ammotyp, wt, color )
+#define GUN(name,app,kn,bi,prob,wt,cost,hitbon,ammotyp,metal,sub,color) \
+	OBJECT( \
+		OBJ(name,app), BITS(kn,0,1,0,0,1,0,0,bi,0,0,sub,metal), 0, \
+		WEAPON_CLASS, prob, 0, \
+		wt, cost, 2, 2, hitbon, ammotyp, wt, color )
 
 /* Note: for weapons that don't do an even die of damage (ex. 2-7 or 3-18)
    the extra damage is added on in weapon.c, not here! */
@@ -325,6 +335,23 @@ BOW("yumi", "long bow",        0,  0, 30, 60, 0, WOOD, P_BOW, HI_WOOD),
 BOW("sling", None,             1, 40,  3, 20, 0, LEATHER, P_SLING, HI_LEATHER),
 BOW("crossbow", None,          1, 45, 50, 40, 0, WOOD, P_CROSSBOW, HI_WOOD),
 
+/* firearms */
+GUN("pistol", None,	   1,  0, 0,  20,  100,  0, WP_BULLET, IRON, P_FIREARM, HI_METAL),
+GUN("submachine gun", None,   1,  0, 0,  25,  250, -1, WP_BULLET, IRON, P_FIREARM, HI_METAL),
+GUN("heavy machine gun", None,1,  1, 0, 500, 2000, -4, WP_BULLET, IRON, P_FIREARM, HI_METAL),
+GUN("rifle", None,		   1,  1, 0,  30,  150,  1, WP_BULLET, IRON, P_FIREARM, HI_METAL),
+GUN("sniper rifle", None,	   1,  1, 0,  50, 4000,  4, WP_BULLET, IRON, P_FIREARM, HI_METAL),
+GUN("shotgun", None,	   1,  0, 0,  35,  200,  3,  WP_SHELL, IRON, P_FIREARM, HI_METAL),
+GUN("auto shotgun", None,	   1,  1, 0,  60, 1500,  0,  WP_SHELL, IRON, P_FIREARM, HI_METAL),
+BULLET("bullet", None,
+	1,  0,   1,   5, 20, 30, 0, WP_BULLET,   P,   IRON, -P_FIREARM, HI_METAL),
+BULLET("shotgun shell", None,
+	1,  0,   1,  10, 30, 45, 0,  WP_SHELL,   P,   IRON, -P_FIREARM, CLR_RED),
+BULLET("frag grenade", None,
+	1,  0,  10, 20, 0, 0, 0, WP_GRENADE,   B,   IRON,    P_NONE, CLR_GREEN),
+BULLET("gas grenade", None,
+	1,  0,  10, 20, 0, 0, 0, WP_GRENADE,   B,   IRON,    P_NONE, CLR_ORANGE),
+
 #undef P
 #undef S
 #undef B
@@ -370,6 +397,8 @@ HELM("dwarvish helm", "hard hat",
      0, 0,           0,  6, 1, 40, 20,  8, 0, IRON, HI_METAL),
 HELM("fedora", None,
      1, 0,           0,  0, 0,  3,  1, 10, 0, CLOTH, CLR_BROWN),
+HELM("halo", None,
+     0, 1, PROTECTION,   0, 0,  0, 200, 10, 1, GOLD, CLR_YELLOW),
 HELM("cornuthaum", "conical hat",
      0, 1, CLAIRVOYANT,  3, 1,  4, 80, 10, 1, CLOTH, CLR_BLUE),
         /* name coined by devteam; confers clairvoyance for wizards,
@@ -762,6 +791,7 @@ TOOL("playing card deck",
                  "pack of cards", 0, 0, 0, 0, 20, 10, 80, LEATHER, HI_LEATHER),
 TOOL("deck of fate",
                  "pack of cards", 0, 0, 1, 0,  5, 10,300, LEATHER, HI_LEATHER),
+TOOL("scabbard",            None, 0, 0, 0, 0,  0, 13, 20, IRON, HI_METAL),
 TOOL("keg",                 None, 1, 0, 0, 1,  5,100, 50, WOOD,  HI_WOOD),
 TOOL("crystal ball", "glass orb", 0, 0, 1, 1, 15,150, 60, GLASS, HI_GLASS),
 TOOL("orb of permafrost",
@@ -814,10 +844,10 @@ WEPTOOL("unicorn horn", None,
                                                            BONE, CLR_WHITE),
 
 /* Two pseudo tools. These can never exist outside of medical kits. */
-OBJECT(OBJ("bandage", (char *)0),
+OBJECT(OBJ("bandage", None),
 		BITS(1,1,0,0,0,0,0,1,0,0,0,P_NONE,CLOTH), 0,
 		TOOL_CLASS, 0, 0, 1, 1, 0, 0, 0, 0, 0, CLR_WHITE),
-OBJECT(OBJ("phial", (char *)0),
+OBJECT(OBJ("phial", None),
 		BITS(1,1,0,0,0,0,0,1,0,0,0,P_NONE,GLASS), 0,
 		TOOL_CLASS, 0, 0, 2, 1, 0, 0, 0, 0, 1, HI_GLASS),
 

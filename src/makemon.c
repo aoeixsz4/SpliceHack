@@ -1,4 +1,4 @@
-/* NetHack 3.6	makemon.c	$NHDT-Date: 1590879611 2020/05/30 23:00:11 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.172 $ */
+/* NetHack 3.6	makemon.c	$NHDT-Date: 1594771378 2020/07/15 00:02:58 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.174 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -217,7 +217,12 @@ register struct monst *mtmp;
             (void) mongets(mtmp, TRIDENT);
         break;
     case S_HUMAN:
-        if (is_mercenary(ptr)) {
+        if (mm == PM_SHOPKEEPER) {
+            (void) mongets(mtmp,SHOTGUN);
+            m_initthrow(mtmp, SHOTGUN_SHELL, 20);
+            m_initthrow(mtmp, SHOTGUN_SHELL, 20);
+            m_initthrow(mtmp, SHOTGUN_SHELL, 20);
+        } else if (is_mercenary(ptr)) {
             w1 = w2 = 0;
             switch (mm) {
             case PM_WATCHMAN:
@@ -235,8 +240,11 @@ register struct monst *mtmp;
                 w1 = rn2(2) ? BROADSWORD : LONG_SWORD;
                 break;
             case PM_PRISON_GUARD:
+                w1 = rn2(2) ? LONG_SWORD : SABER;
+                break;
             case PM_CAPTAIN:
             case PM_WATCH_CAPTAIN:
+                (void) mongets(mtmp, rn2(2) ? FRAG_GRENADE : GAS_GRENADE);
                 w1 = rn2(2) ? LONG_SWORD : SABER;
                 break;
             case PM_RONIN:
@@ -623,6 +631,8 @@ register struct monst *mtmp;
                 (void) mongets(mtmp, ORCISH_RING_MAIL);
             break;
         case PM_ORC_WARLORD:
+            (void) mongets(mtmp, FRAG_GRENADE);
+            /* FALLTHRU */
         case PM_URUK_HAI:
             if (!rn2(3))
                 (void) mongets(mtmp, ORCISH_CLOAK);
@@ -749,14 +759,14 @@ register struct monst *mtmp;
     case S_DEMON:
         switch (mm) {
         case PM_DAMNED_PIRATE:
-     				otmp = mksobj(SCIMITAR, FALSE, FALSE);
-     				curse(otmp);
-     				(void) mpickobj(mtmp, otmp);
-     				otmp = mksobj(LIGHT_ARMOR, FALSE, FALSE);
-     				curse(otmp);
-     				otmp->oeroded = 1;
-     				(void) mpickobj(mtmp, otmp);
-     			  break;
+            otmp = mksobj(SCIMITAR, FALSE, FALSE);
+            curse(otmp);
+            (void) mpickobj(mtmp, otmp);
+            otmp = mksobj(LIGHT_ARMOR, FALSE, FALSE);
+            curse(otmp);
+            otmp->oeroded = 1;
+            (void) mpickobj(mtmp, otmp);
+            break;
         case PM_HEADLESS_HORSEMAN:
             (void) mongets(mtmp, LANCE);
             (void) mongets(mtmp, SCALE_MAIL);
@@ -1004,7 +1014,7 @@ register struct monst *mtmp;
             switch (rn2(4)) {
             /* MAJOR fall through ... */
             case 0:
-                (void) mongets(mtmp, WAN_MAGIC_MISSILE);
+                (void) mongets(mtmp, POT_SPEED);
                 /*FALLTHRU*/
             case 1:
                 (void) mongets(mtmp, POT_EXTRA_HEALING);
@@ -1013,7 +1023,7 @@ register struct monst *mtmp;
                 (void) mongets(mtmp, POT_HEALING);
                 /*FALLTHRU*/
             case 3:
-                (void) mongets(mtmp, WAN_STRIKING);
+                (void) mongets(mtmp, POT_REFLECTION);
             }
         } else if (ptr == &mons[PM_EXTRAPLANAR_MERCHANT]) {
             (void) mongets(mtmp, SKELETON_KEY);
@@ -1048,6 +1058,7 @@ register struct monst *mtmp;
               otmp = mksobj(AMULET_OF_LIFE_SAVING, FALSE, FALSE);
               mpickobj(mtmp, otmp);
               (void) mongets(mtmp,SKELETON_KEY);
+              m_initthrow(mtmp, GAS_GRENADE, 3);
         } else if (ptr->msound == MS_PRIEST
                    || quest_mon_represents_role(ptr, PM_PRIEST)) {
             (void) mongets(mtmp, rn2(7) ? MYSTIC_ROBE
@@ -1197,6 +1208,12 @@ register struct monst *mtmp;
         break;
     default:
         break;
+    }
+
+    if (is_pirate(ptr) && !rn2(2)) {
+        (void) mongets(mtmp, FRAG_GRENADE);
+    } else if (is_mercenary(ptr) && !rn2(6)) {
+        (void) mongets(mtmp, rn2(2) ? FRAG_GRENADE : GAS_GRENADE);
     }
 
     /* ordinary soldiers rarely have access to magic (or gold :-) */
@@ -1428,7 +1445,7 @@ uchar m_lev; /* not just a struct mon because polyself code also uses this */
          * way to fit in the 50..127 positive range of a signed character
          * above the 1..49 that indicate "normal" monster levels */
         return 2 * (ptr->mlevel - 6);
-    } else if (m_lev == 0) {
+    } else if (!m_lev) {
         return rnd(4);
     } else {
         int hpmax = d(m_lev, hd_size(ptr));
@@ -1452,6 +1469,13 @@ int mndx;
     if (ptr->mlevel > 49) {
         /* Second half of the "special" fixed hp monster code: adjust level */
         mon->m_lev = mon->mhp / 4; /* approximation */
+    }
+        /* if d(X,8) rolled a 1 all X times, give a boost;
+       most beneficial for level 0 and level 1 monsters, making mhpmax
+       and starting mhp always be at least 2 */
+    if (mon->mhpmax == 1) {
+        mon->mhpmax += 1;
+        mon->mhp = mon->mhpmax;
     }
 }
 
@@ -1554,11 +1578,12 @@ long mmflags;
     struct monst fakemon;
     coord cc;
     int mndx, mcham, ct, mitem;
-    boolean anymon = (!ptr);
-    boolean byyou = (x == u.ux && y == u.uy);
-    boolean allow_minvent = ((mmflags & NO_MINVENT) == 0);
-    boolean countbirth = ((mmflags & MM_NOCOUNTBIRTH) == 0);
-    boolean arcane, clerical;
+    boolean anymon = !ptr,
+            byyou = (x == u.ux && y == u.uy),
+            allow_minvent = ((mmflags & NO_MINVENT) == 0),
+            countbirth = ((mmflags & MM_NOCOUNTBIRTH) == 0),
+            allowtail = ((mmflags & MM_NOTAIL) == 0),
+            boolean arcane, clerical;
     unsigned gpflags = (mmflags & MM_IGNOREWATER) ? MM_IGNOREWATER : 0;
 
     fakemon = cg.zeromonst;
@@ -1860,7 +1885,7 @@ long mmflags;
             mtmp->mpeaceful = mtmp->mtame = FALSE;
     }
     if (mndx == PM_LONG_WORM && (mtmp->wormno = get_wormno()) != 0) {
-        initworm(mtmp, rn2(5));
+        initworm(mtmp, allowtail ? rn2(5) : 0);
         if (count_wsegs(mtmp))
             place_worm_tail_randomly(mtmp, x, y);
     }
@@ -2878,7 +2903,11 @@ create_sin()
     int tryct = 0;
     int pm = 0;
     do {
-        pm = rn1(PM_ENVY - PM_WRATH + 1, PM_WRATH);
+        if (g.youmonst.data == &mons[PM_FALLEN_ANGEL] && Race_if(PM_ANGEL)) {
+            pm = rn1(PM_ARCHON - PM_AVENGER_ARCHON + 1, PM_AVENGER_ARCHON);
+        } else {
+            pm = rn1(PM_ENVY - PM_WRATH + 1, PM_WRATH);
+        }
         tryct++;
     } while ((g.mvitals[pm].mvflags & G_EXTINCT) && tryct < 100);
     if (!(g.mvitals[pm].mvflags & G_EXTINCT)) {

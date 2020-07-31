@@ -1,4 +1,4 @@
-/* NetHack 3.6	muse.c	$NHDT-Date: 1590870788 2020/05/30 20:33:08 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.127 $ */
+/* NetHack 3.6	muse.c	$NHDT-Date: 1594630714 2020/07/13 08:58:34 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.128 $ */
 /*      Copyright (C) 1990 by Ken Arromdee                         */
 /* NetHack may be freely redistributed.  See license for details.  */
 
@@ -349,25 +349,6 @@ struct monst *mtmp;
 		    return TRUE;
 		}
     return FALSE;
-}
-
-void
-card_response(mtmp)
-struct monst *mtmp;
-{
-    if (find_defensive(mtmp, TRUE) && g.m.defensive->oclass == SCROLL_CLASS) {
-        if (canseemon(mtmp))
-            pline("%s responds defensively!", Monnam(mtmp));
-        use_defensive(mtmp);
-    } else if (find_offensive(mtmp) && g.m.offensive->oclass == SCROLL_CLASS) {
-        if (canseemon(mtmp))
-            pline("%s responds offensively!", Monnam(mtmp));
-        use_offensive(mtmp);
-    } else if (find_misc(mtmp) && g.m.misc->oclass == SCROLL_CLASS) {
-        if (canseemon(mtmp))
-            pline("%s responds!", Monnam(mtmp));
-        use_misc(mtmp);
-    }
 }
 
 /* Select a defensive item/action for a monster.  Returns TRUE iff one is
@@ -1097,8 +1078,12 @@ struct monst *mtmp;
              * (mongone -> mdrop_special_objs) but we force any
              * monster who manages to acquire it or the invocation
              * tools to stick around instead of letting it escape.
+             * Don't let the Wizard escape even when not carrying
+             * anything of interest unless there are more than 1
+             * of him.
              */
-            if (mon_has_special(mtmp))
+            if (mon_has_special(mtmp)
+                || (mtmp->iswiz && g.context.no_of_wizards < 2))
                 return 0;
             if (vismon)
                 pline("%s escapes the dungeon!", Monnam(mtmp));
@@ -2681,7 +2666,7 @@ struct monst *mtmp;
     case MUSE_POT_REFLECT:
         mquaffmsg(mtmp, otmp);
         mtmp->mreflect = 1;
-        if (canspotmon(mtmp) && !Blind)
+        if (canseemon(mtmp) && !Blind)
             pline("%s is covered in a silvery sheen!", Monnam(mtmp));
         if (oseen)
             makeknown(POT_REFLECTION);
@@ -3078,10 +3063,16 @@ const char *str;
         if (str)
             pline(str, s_suffix(mon_nam(mon)), "body");
         return TRUE;
-    /* this REALLY needed a base case. Currently handles cartomancer artifact */
     } else {
-        if (str)
-            pline(str, mon_nam(mon), "");
+        /* check monster inventory for artifacts that grant reflection when
+         * carried; handles Void Lily */
+        for (orefl = mon->minvent; orefl; orefl = orefl->nobj) {
+            if (orefl->oartifact && arti_reflects(orefl)) {
+                if (str)
+                    pline(str, s_suffix(mon_nam(mon)), "body");
+                return TRUE;
+            }
+        }
     }
     return FALSE;
 }
@@ -3121,15 +3112,18 @@ const char *fmt, *str;
         if (fmt && str)
             pline(fmt, str, "scales");
         return TRUE;
-    } else if (HReflecting) {
-        if (fmt && str) {
+    } else if (g.youmonst.data == &mons[PM_SILVER_GOLEM]
+            || g.youmonst.data == &mons[PM_CRYSTAL_GOLEM]
+            || g.youmonst.data == &mons[PM_SAPPHIRE_GOLEM]) {
+        if (fmt && str)
             pline(fmt, str, "body");
-        }
-    /* this also really needed a base case. */
-    } else {
-        if (fmt && str) {
+        return TRUE;
+    } else if (Reflecting) {
+        /* intrinsic or extrinsic reflection from other source
+         * e.g. cartomancer artifact */
+        if (fmt && str)
             pline(fmt, str, "body");
-        }
+	return TRUE;
     }
     return FALSE;
 }

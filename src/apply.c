@@ -1,4 +1,4 @@
-/* NetHack 3.6	apply.c	$NHDT-Date: 1582155875 2020/02/19 23:44:35 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.318 $ */
+/* NetHack 3.6	apply.c	$NHDT-Date: 1593614972 2020/07/01 14:49:32 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.325 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2012. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -381,7 +381,8 @@ struct obj *obj;
                 }
                 if ((pm = dlord(A_NONE)) != NON_PM) {
                     mtmp = makemon(&mons[pm], u.ux, u.uy, NO_MM_FLAGS);
-                    pline("%s appears from a cloud of noxious smoke!", Monnam(mtmp));
+                    if (mtmp) pline("%s appears from a cloud of noxious smoke!", Monnam(mtmp));
+                    else pline("Something stinks!");
                 }
                 draws = 0;
                 break;
@@ -443,7 +444,7 @@ struct obj *obj;
                     else
                         mtmp = makemon(&mons[PM_SUCCUBUS],
                                        u.ux, u.uy, NO_MM_FLAGS);
-                    mtmp->mpeaceful = 1;
+                    if (mtmp) mtmp->mpeaceful = 1;
                 }
                 if (!Deaf && mtmp) {
                     You_hear("infernal giggling.");
@@ -492,8 +493,8 @@ struct obj *obj;
                 unrestrict_weapon_skill(P_RIDING);
                 mtmp = makemon(&mons[PM_NIGHTMARE],
                                u.ux, u.uy, MM_EDOG);
-                (void) initedog(mtmp);
                 if (mtmp) {
+                    (void) initedog(mtmp);
                     otmp = mksobj(SADDLE, FALSE, FALSE);
                     put_saddle_on_mon(otmp, mtmp);
                     Your("steed arrives!");
@@ -1280,9 +1281,9 @@ struct obj **optr;
     struct monst *mtmp;
     boolean wakem = FALSE, learno = FALSE,
             ordinary = (obj->otyp != BELL_OF_OPENING || !obj->spe),
-            invoking =
-                (obj->otyp == BELL_OF_OPENING && invocation_pos(u.ux, u.uy)
-                 && !On_stairs(u.ux, u.uy));
+            invoking = (obj->otyp == BELL_OF_OPENING
+                        && invocation_pos(u.ux, u.uy)
+                        && !On_stairs(u.ux, u.uy));
 
     You("ring %s.", the(xname(obj)));
 
@@ -2623,13 +2624,13 @@ struct obj **optr;
         return;
     }
     if (!Unchanging) {
+        polymon(obj->corpsenm);
         if (obj->cursed) {
             You1(shudder_for_moment);
             losehp(rnd(30), "system shock", KILLED_BY_AN);
             pline("%s, then splits in two!", Tobjnam(obj, "shudder"));
             useup(obj);
         }
-        polymon(obj->corpsenm);
     } else {
         pline("Unfortunately, no mask will hide what you truly are.");
     }
@@ -4088,13 +4089,13 @@ doapply()
         } else if (!ublindf) {
             Blindf_on(obj);
         } else {
-            You("are already %s.", ublindf->otyp == TOWEL
+            You("are already %s.", (ublindf->otyp == TOWEL)
                                        ? "covered by a towel"
-                                       : ublindf->otyp == BLINDFOLD
+                                       : (ublindf->otyp == BLINDFOLD)
                                              ? "wearing a blindfold"
-                                             : ublindf->otyp == EARMUFFS
+                                             : (ublindf->otyp == EARMUFFS)
                                              ? "wearing earmuffs"
-                                             : ublindf->otyp == LENSES
+                                             : (ublindf->otyp == LENSES)
                                              ? "wearing lenses"
                                              : "wearing a mask");
         }
@@ -4251,6 +4252,7 @@ doapply()
             You("chug some booze from %s.",
                     yname(obj));
             (void) peffects(pseudo);
+            obfree(pseudo, (struct obj *) 0);
         } else if (Hallucination) 
             pline("Where has the rum gone?");
         else
@@ -4334,6 +4336,22 @@ doapply()
     case TOUCHSTONE:
         use_stone(obj);
         break;
+	case AUTO_SHOTGUN:
+	case SUBMACHINE_GUN:		
+		if (obj->altmode == WP_MODE_AUTO) obj-> altmode = WP_MODE_SINGLE;
+		else obj->altmode = WP_MODE_AUTO;
+		You("switch %s to %s mode.", yname(obj), 
+			(obj->altmode ? "semi-automatic" : "full automatic"));
+		break;
+    case FRAG_GRENADE:
+	case GAS_GRENADE:
+		if (!obj->oarmed) {
+            if (obj->oartifact == ART_HAND_GRENADE_OF_ANTIOCH) You("pull the holy pin.");
+			else You("arm %s.", yname(obj));
+			arm_bomb(obj, TRUE);
+            update_inventory();
+		} else pline("It's already armed!");
+		break;
     default:
         /* Pole-weapons can strike at a distance */
         if (is_pole(obj)) {

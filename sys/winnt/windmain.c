@@ -12,9 +12,6 @@
 #include <sys\stat.h>
 #include <errno.h>
 #include <ShlObj.h>
-#if !defined(VERSION_MAJOR)
-#include "patchlevel.h"
-#endif
 
 #if !defined(SAFEPROCS)
 #error You must #define SAFEPROCS to build windmain.c
@@ -28,7 +25,7 @@ char *FDECL(translate_path_variables, (const char *, char *));
 char *NDECL(exename);
 boolean NDECL(fakeconsole);
 void NDECL(freefakeconsole);
-E void FDECL(nethack_exit, (int));
+E void FDECL(nethack_exit, (int)) NORETURN;
 #if defined(MSWIN_GRAPHICS)
 E void NDECL(mswin_destroy_reg);
 #endif

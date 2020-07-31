@@ -1,4 +1,4 @@
-/* NetHack 3.6	artifact.c	$NHDT-Date: 1581886858 2020/02/16 21:00:58 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.153 $ */
+/* NetHack 3.6	artifact.c	$NHDT-Date: 1593611274 2020/07/01 13:47:54 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.158 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2013. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -498,6 +498,8 @@ long wp_mask;
         mask = &EStable;
     else if (dtyp == AD_PSYC)
         mask = &EPsychic_resistance;
+    else if (dtyp == AD_WTHR)
+        mask = &ERegeneration;
 
     if (mask && wp_mask == W_ART && !on) {
         /* find out if some other artifact also confers this intrinsic;
@@ -1428,6 +1430,23 @@ int dieroll; /* needed for Magicbane and vorpal blades */
                 mdef->mstun = 1;
         }
     }
+    if (otmp->oartifact == ART_BALMUNG) {
+        register struct obj *obj = some_armor(mdef);
+        if (youdefend) {
+            destroy_arm(some_armor(&g.youmonst));
+        } else if (obj) {
+            obj_extract_self(obj);
+            if (obj->owornmask) {
+                mdef->misc_worn_check &= ~obj->owornmask;
+                obj->owornmask = 0L;
+                update_mon_intrinsics(mdef, obj, FALSE, FALSE);
+                mdef->misc_worn_check |= I_SPECIAL;
+            }
+            if (vis)
+                pline("%s under the brown blade!", An(aobjnam(obj, "shred")));
+            obfree(obj, (struct obj *)0);
+        }
+    }
    	if(otmp->oartifact == ART_REAVER){
    	 if(youattack){
    	  if(mdef->minvent && (Role_if(PM_PIRATE) || !rn2(10) ) ){
@@ -1726,8 +1745,8 @@ int dieroll; /* needed for Magicbane and vorpal blades */
       return TRUE;
     }
     if (spec_ability(otmp, SPFX_DRLI)) {
-        /* some non-living creatures (golems, vortices) are
-           vulnerable to life drain effects */
+        /* some non-living creatures (golems, vortices) are vulnerable to
+           life drain effects so can get "<Arti> draws the <life>" feedback */
         const char *life = nonliving(mdef->data) ? "animating force" : "life";
         if (item_catches_drain(mdef)) {
             /* This has to go here rather than along with the resists_drli
@@ -1739,6 +1758,16 @@ int dieroll; /* needed for Magicbane and vorpal blades */
         }
 
         if (!youdefend) {
+            int m_lev = (int) mdef->m_lev, /* will be 0 for 1d4 mon */
+                mhpmax = mdef->mhpmax,
+                drain = monhp_per_lvl(mdef); /* usually 1d8 */
+                /* note: DRLI attack uses 2d6, attacker doesn't get healed */
+
+            /* stop draining HP if it drops too low (still drains level;
+               also caller still inflicts regular weapon damage) */
+            if (mhpmax - drain <= m_lev)
+                drain = (mhpmax > m_lev) ? (mhpmax - (m_lev + 1)) : 0;
+
             if (vis) {
                 if (otmp->oartifact == ART_STORMBRINGER)
                     pline_The("%s blade draws the %s from %s!",
@@ -1758,21 +1787,20 @@ int dieroll; /* needed for Magicbane and vorpal blades */
                 /* losing a level when at 0 is fatal */
                 *dmgptr = 2 * mdef->mhp + FATAL_DAMAGE_MODIFIER;
             } else {
-                int drain = monhp_per_lvl(mdef);
-
                 *dmgptr += drain;
                 mdef->mhpmax -= drain;
                 mdef->m_lev--;
-                drain /= 2;
-                if (drain) {
-                    /* attacker heals in proportion to amount drained */
-                    if (youattack) {
-                        healup(drain, 0, FALSE, FALSE);
-                    } else {
-                        magr->mhp += drain;
-                        if (magr->mhp > magr->mhpmax)
-                            magr->mhp = magr->mhpmax;
-                    }
+            }
+
+            if (drain > 0) {
+                /* drain: was target's damage, now heal attacker by half */
+                drain = (drain + 1) / 2; /* drain/2 rounded up */
+                if (youattack) {
+                    healup(drain, 0, FALSE, FALSE);
+                } else {
+                    magr->mhp += drain;
+                    if (magr->mhp > magr->mhpmax)
+                        magr->mhp = magr->mhpmax;
                 }
                 if (mdef->data == &mons[PM_HYDRA])
                     pline("One of %s heads swells up and explodes!", s_suffix(mon_nam(mdef)));
@@ -1798,7 +1826,7 @@ int dieroll; /* needed for Magicbane and vorpal blades */
                       life);
             losexp("life drainage");
             if (magr && magr->mhp < magr->mhpmax) {
-                magr->mhp += (oldhpmax - u.uhpmax) / 2;
+                magr->mhp += (oldhpmax - u.uhpmax + 1) / 2;
                 if (magr->mhp > magr->mhpmax)
                     magr->mhp = magr->mhpmax;
             }
@@ -1872,17 +1900,25 @@ struct obj *obj;
             break;
         }
         case LION: {
-            verbalize("I call upon thee for aid!");
             pline("%s transforms into a glorious winged lion!",
                   xname(obj));
             mtmp = makemon(&mons[PM_LAMASSU], u.ux, u.uy, NO_MM_FLAGS);
-            tamedog(mtmp, (struct obj *) 0);
-            christen_monst(mtmp, "Sharur");
+            if (mtmp) {
+                tamedog(mtmp, (struct obj *) 0);
+                christen_monst(mtmp, "Sharur");
+            }
             useup(obj);
             break;
         }
+        case HPHEAL: {
+            if (Upolyd)
+                healup(u.mhmax / 2, 0, 0, 0);
+            else
+                healup(u.uhpmax / 2, 0, 0, 0);
+            pline("Avalon blazes with white light! Your wounds instantly seal!");
+            break;
+        }
         case HEALING: {
-            verbalize("Begone, sickness and corruption. Thou art banished.");
             int healamt = (u.uhpmax + 1 - u.uhp) / 2;
             long creamed = (long) u.ucreamed;
 
@@ -1908,7 +1944,6 @@ struct obj *obj;
             break;
         }
         case ENERGY_BOOST: {
-            verbalize("My thought is iron, my will is law.");
             int epboost = (u.uenmax + 1 - u.uen) / 2;
 
             if (epboost > 120)
@@ -1928,7 +1963,6 @@ struct obj *obj;
                 obj->age = 0; /* don't charge for changing their mind */
                 return 0;
             }
-            verbalize("Triggers, fail. Springs, snap. Machinations, be forgotten.");
             break;
         }
         case CHARGE_OBJ: {
@@ -1939,7 +1973,6 @@ struct obj *obj;
                 obj->age = 0;
                 return 0;
             }
-            verbalize("Be renewed!");
             b_effect = (obj->blessed && (oart->role == Role_switch
                                          || oart->role == NON_PM));
             recharge(otmp, b_effect ? 1 : obj->cursed ? -1 : 0);
@@ -1955,7 +1988,6 @@ struct obj *obj;
             winid tmpwin = create_nhwindow(NHW_MENU);
             anything any;
 
-            verbalize("Your sight creates my destiny!");
             if (Is_blackmarket(&u.uz) && *u.ushops) {
       		      You("feel very disoriented for a moment.");
       		      break;
@@ -2014,7 +2046,6 @@ struct obj *obj;
             break;
         }
         case ENLIGHTENING:
-            verbalize("Grant me a glimpse into the beyond!");
             enlightenment(MAGICENLIGHTENMENT, ENL_GAMEINPROGRESS);
             break;
         case CREATE_AMMO: {
@@ -2022,7 +2053,6 @@ struct obj *obj;
 
             if (!otmp)
                 goto nothing_special;
-            verbalize("Let my quiver be ever-filled, and let all foes before me suffer a thousand arrows.");
             otmp->blessed = obj->blessed;
             otmp->cursed = obj->cursed;
             otmp->bknown = obj->bknown;
@@ -2044,7 +2074,6 @@ struct obj *obj;
         case PHASING:   /* Walk through walls and stone like a xorn */
             if (Passes_walls) goto nothing_special;
             if (oart == &artilist[ART_IRON_BALL_OF_LIBERATION]) {
-                verbalize("Liberate me from this earthly prison!");
                 if (Punished && (obj != uball)) {
                     unpunish(); /* Remove a mundane heavy iron ball */
                 }
@@ -2070,31 +2099,42 @@ struct obj *obj;
             obj->age += HPasses_walls; /* Time begins after phasing ends */
             break;
         case OBJECT_DET:
-                verbalize("By my life, I swear that I am up to no good!");
          		object_detect(obj, 0);
          		artifact_detect(obj);
          		break;
         case LIGHTNING_BOLT: {
-            struct obj* pseudo = mksobj(WAN_LIGHTNING, FALSE, FALSE);
-            pseudo->blessed = pseudo->cursed = 0;
-            verbalize("Storm! In the name of the weapon I wield, heed my call!");
-            /* type is a "spell of lightning bolt" which doesn't actually
-             * exist: 10 + AD_ELEC - 1 */
-            if(!getdir(NULL) || (!u.dx && !u.dy && !u.dz)) {
-                int damage = zapyourself(pseudo, TRUE);
-                if (damage > 0) {
-                    losehp(damage, "struck by lightning", NO_KILLER_PREFIX);
+                struct obj* pseudo = mksobj(WAN_LIGHTNING, FALSE, FALSE);
+                pseudo->blessed = pseudo->cursed = 0;
+                /* type is a "spell of lightning bolt" which doesn't actually
+                * exist: 10 + AD_ELEC - 1 */
+                if(!getdir(NULL) || (!u.dx && !u.dy && !u.dz)) {
+                    int damage = zapyourself(pseudo, TRUE);
+                    if (damage > 0) {
+                        losehp(damage, "struck by lightning", NO_KILLER_PREFIX);
+                    }
                 }
+                else {
+                    /* don't use weffects - we want higher damage than that */
+                    buzz(9 + AD_ELEC, 8, u.ux, u.uy, u.dx, u.dy);
+                }
+                obfree(pseudo, NULL);
             }
-            else {
-                /* don't use weffects - we want higher damage than that */
-                buzz(9 + AD_ELEC, 8, u.ux, u.uy, u.dx, u.dy);
-            }
-            obfree(pseudo, NULL);
-        }
             break;
+        case HOLY_LANCE: {
+            struct obj* avalon = carrying(SCABBARD);
+            if (!avalon || avalon->oartifact != ART_AVALON) {
+                You("attempt to call on the power of Excalibur, but fail.");
+                pline("If only you had its scabbard...");
+            } else if(!getdir(NULL) || (!u.dx && !u.dy && !u.dz)) {
+                You("bask in holy light.");
+                break;
+            } else {
+                You("channel your faith, brandish Excalibur, then swing it as hard as you can!");
+                buzz(9 + AD_FIRE, 12, u.ux, u.uy, u.dx, u.dy);
+            }
+            break;
+        }
         case ELEMENTS: {
-            verbalize("Fire, Water, Earth, Air!");
             if (HFire_resistance & ~FROMOUTSIDE) {
                 pline("The %s beneath you erupts in flame.", surface(u.ux, u.uy));
                 HFire_resistance += rn1(100,100);
@@ -2123,21 +2163,21 @@ struct obj *obj;
             struct obj* pseudo = NULL;
             switch(artinum) {
             case ART_IMHULLU:
-                verbalize("Come forth, winds, and cleanse this place of foes!");
                 pseudo = mksobj(SCR_AIR, FALSE, FALSE);
                 break;
             case ART_STORMBRINGER:
-                verbalize("Flee before the coming storm, and bow to my path of destruction!");
                 pseudo = mksobj(SCR_SCARE_MONSTER, FALSE, FALSE);
                 break;
             default:
                 impossible("bad artifact invocation seffect?");
                 break;
             }
-            pseudo->blessed = TRUE;
-            pseudo->cursed = FALSE;
-            (void) seffects(pseudo);
-            obfree(pseudo, NULL);
+            if (pseudo) {
+                pseudo->blessed = TRUE;
+                pseudo->cursed = FALSE;
+                if (!seffects(pseudo))
+                    obfree(pseudo, NULL);
+            }
         }
         }
     } else {
@@ -2192,14 +2232,12 @@ struct obj *obj;
             break;
         case FLYING:
             if (on) {
-                verbalize("Come, corruptors of all that is natural. Thou shalt fall before my sword.");
                 You("sprout three pairs of angelic wings!");
             } else
                 Your("wings vanish.");
             break;
         case WWALKING:
             if (on) {
-                verbalize("Ocean, heed my will.");
                 Your("feet are surrounded by a swirl of foam!");
                 do_earthquake(7, u.ux, u.uy);
                 if (u.uinwater)
@@ -2255,8 +2293,7 @@ artifact_light(obj)
 struct obj *obj;
 {
     return (boolean) (get_artifact(obj) &&
-                        ((obj->oartifact == ART_SUNSWORD) ||
-                        (obj->oartifact == ART_UNLIMITED_MOON)));
+                        obj->oartifact == ART_SUNSWORD);
 }
 
 /* KMH -- Talking artifacts are finally implemented */
@@ -2507,6 +2544,12 @@ struct obj **objp; /* might be destroyed or unintentionally dropped */
 boolean loseit;    /* whether to drop it if hero can longer touch it */
 {
     struct obj *obj = *objp;
+
+    /* allow hero in silver-hating form to try to perform invocation ritual */
+    if (obj->otyp == BELL_OF_OPENING
+        && invocation_pos(u.ux, u.uy) && !On_stairs(u.ux, u.uy)) {
+        return 1;
+    }
 
     if (touch_artifact(obj, &g.youmonst)) {
         char buf[BUFSZ];

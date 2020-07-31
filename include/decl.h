@@ -1,4 +1,4 @@
-/* NetHack 3.6  decl.h  $NHDT-Date: 1589326665 2020/05/12 23:37:45 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.236 $ */
+/* NetHack 3.6  decl.h  $NHDT-Date: 1594730609 2020/07/14 12:43:29 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.239 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Michael Allison, 2007. */
 /* NetHack may be freely redistributed.  See license for details. */
@@ -827,13 +827,6 @@ struct instance_globals {
 #ifdef MICRO
     char levels[PATHLEN]; /* where levels are */
 #endif /* MICRO */
-#ifdef MFLOPPY
-    char permbones[PATHLEN]; /* where permanent copy of bones go */
-    int ramdisk = FALSE;     /* whether to copy bones to levels or not */
-    int saveprompt = TRUE;
-    const char *alllevels = "levels.*";
-    const char *allbones = "bones*.*";
-#endif
     struct sinfo program_state;
 
     /* detect.c */
@@ -966,9 +959,10 @@ struct instance_globals {
     /* makemon.c */
 
     /* mhitm.c */
-    boolean vis;
-    boolean far_noise;
     long noisetime;
+    boolean far_noise;
+    boolean vis;
+    boolean skipdrin; /* mind flayer against headless target */
 
     /* mhitu.c */
     int mhitu_dieroll;
@@ -1168,6 +1162,10 @@ struct instance_globals {
     /* spells.c */
     int spl_sortmode;   /* index into spl_sortchoices[] */
     int *spl_orderindx; /* array of g.spl_book[] indices */
+
+    /* steal.c */
+    unsigned int stealoid; /* object to be stolen */
+    unsigned int stealmid; /* monster doing the stealing */
 
     /* teleport.c */
     struct obj *telescroll; /* non-null when teleporting via this scroll */
