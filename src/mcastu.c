@@ -79,7 +79,7 @@ static void FDECL(cursetxt, (struct monst *, BOOLEAN_P));
 static int FDECL(m_cure_self, (struct monst *, int));
 static int FDECL(m_extra_cure_self, (struct monst *, int));
 static void FDECL(cast_monster_spell, (struct monst *, int, int, BOOLEAN_P));
-static boolean FDECL(is_undirected_spell, (unsigned int, int));
+static boolean FDECL(is_undirected_spell, (int));
 static boolean
 FDECL(spell_would_be_useless, (struct monst *, int));
 
@@ -227,7 +227,7 @@ boolean foundyou;
             spellnum = choose_monster_spell(mtmp, mattk->adtyp == AD_SPEL);
             /* not trying to attack?  don't allow directed spells */
             if (!thinks_it_foundyou) {
-                if (!is_undirected_spell(mattk->adtyp, spellnum)
+                if (!is_undirected_spell(spellnum)
                     || spell_would_be_useless(mtmp, spellnum)) {
                     if (foundyou)
                         impossible(
@@ -244,7 +244,7 @@ boolean foundyou;
 
     /* monster unable to cast spells? */
     if (mtmp->mcan || mtmp->mspec_used || !ml) {
-        cursetxt(mtmp, is_undirected_spell(mattk->adtyp, spellnum));
+        cursetxt(mtmp, is_undirected_spell(spellnum));
         return 0;
     }
 
@@ -258,7 +258,7 @@ boolean foundyou;
        wrong place?  If so, give a message, and return.  Do this *after*
        penalizing mspec_used. */
     if (!foundyou && thinks_it_foundyou
-        && !is_undirected_spell(mattk->adtyp, spellnum)) {
+        && !is_undirected_spell(spellnum)) {
         pline("%s casts a spell at %s!",
               canseemon(mtmp) ? Monnam(mtmp) : "Something",
               levl[mtmp->mux][mtmp->muy].typ == WATER ? "empty water"
@@ -272,10 +272,10 @@ boolean foundyou;
             pline_The("air crackles around %s.", mon_nam(mtmp));
         return 0;
     }
-    if (canspotmon(mtmp) || !is_undirected_spell(mattk->adtyp, spellnum)) {
+    if (canspotmon(mtmp) || !is_undirected_spell(spellnum)) {
         pline("%s casts a spell%s!",
               canspotmon(mtmp) ? Monnam(mtmp) : "Something",
-              is_undirected_spell(mattk->adtyp, spellnum)
+              is_undirected_spell(spellnum)
                   ? ""
                   : (Invis && !perceives(mtmp->data)
                      && (mtmp->mux != u.ux || mtmp->muy != u.uy))
@@ -450,10 +450,10 @@ boolean arcane;
 {
     register struct trap *trtmp;
 
-    if (arcane && dmg == 0 && !is_undirected_spell(AD_SPEL, spellnum)) {
+    if (arcane && dmg == 0 && !is_undirected_spell(spellnum)) {
         impossible("cast directed wizard spell (%d) with dmg=0?", spellnum);
         return;
-    } else if (!arcane && dmg == 0 && !is_undirected_spell(AD_CLRC, spellnum)) {
+    } else if (!arcane && dmg == 0 && !is_undirected_spell(spellnum)) {
         impossible("cast directed cleric spell (%d) with dmg=0?", spellnum);
         return;
     }
@@ -865,97 +865,31 @@ boolean arcane;
 
 static
 boolean
-is_undirected_spell(adtyp, spellnum)
-unsigned int adtyp;
+is_undirected_spell(spellnum)
 int spellnum;
 {
-    if (adtyp == AD_SPEL) {
-        switch (spellnum) {
-        case SPE_DOUBLE_TROUBLE:
-        case SPE_SUMMON_NASTIES:
-        case SPE_FLAME_SPHERE:
-        case SPE_FREEZE_SPHERE:
-        case SPE_TURN_UNDEAD:
-        case SPE_AGGRAVATION:
-        case SPE_INVISIBILITY:
-        case SPE_HASTE_SELF:
-        case SPE_HEALING:
-        case SPE_JUMPING:
-        case SPE_WEB:
-        case SPE_EXTRA_HEALING:
-        case SPE_CURE_BLINDNESS:
-        case SPE_CURE_SICKNESS:
-        case SPE_LIGHT:
-        case SPE_PROTECTION:
-            return TRUE;
-        default:
-            break;
-        }
-    } else if (adtyp == AD_CLRC) {
-        switch (spellnum) {
-        case SPE_INSECT_SWARM:
-        case SPE_HEALING:
-        case SPE_EXTRA_HEALING:
-        case SPE_CURE_BLINDNESS:
-        case SPE_CURE_SICKNESS:
-        case SPE_PROTECTION:
-            return TRUE;
-        default:
-            break;
-        }
+    switch (spellnum) {
+    case SPE_DOUBLE_TROUBLE:
+    case SPE_SUMMON_NASTIES:
+    case SPE_FLAME_SPHERE:
+    case SPE_FREEZE_SPHERE:
+    case SPE_TURN_UNDEAD:
+    case SPE_AGGRAVATION:
+    case SPE_INVISIBILITY:
+    case SPE_HASTE_SELF:
+    case SPE_HEALING:
+    case SPE_JUMPING:
+    case SPE_WEB:
+    case SPE_EXTRA_HEALING:
+    case SPE_CURE_BLINDNESS:
+    case SPE_CURE_SICKNESS:
+    case SPE_LIGHT:
+    case SPE_PROTECTION:
+    case SPE_INSECT_SWARM:
+        return TRUE;
+    default:
+        break;
     }
-    return FALSE;
-}
-
-static
-boolean
-mspell_would_be_useless(mtmp, mdef, adtyp, spellnum)
-struct monst *mtmp;
-struct monst *mdef;
-unsigned int adtyp;
-int spellnum;
-{
-    if (adtyp == AD_SPEL) {
-      	/* haste self when already fast */
-      	if (mtmp->permspeed == MFAST && spellnum == SPE_HASTE_SELF)
-      	    return TRUE;
-      	/* invisibility when already invisible */
-      	if ((mtmp->minvis || mtmp->invis_blkd) && spellnum == SPE_INVISIBILITY)
-      	    return TRUE;
-      	/* healing when already healed */
-      	if (mtmp->mhp == mtmp->mhpmax && (spellnum == SPE_HEALING || spellnum == SPE_EXTRA_HEALING))
-      	    return TRUE;
-        if (can_jump(mtmp) && spellnum == SPE_JUMPING)
-            return TRUE;
-        /* cure blindness when already able to see */
-        if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
-            return TRUE;
-        /* cure sickness only when acutally sick */
-        if (!mtmp->mwither && spellnum == SPE_CURE_SICKNESS)
-            return TRUE;
-      	/* don't summon monsters if it doesn't think you're around */
-      	if ((!mtmp->iswiz || g.context.no_of_wizards > 1)
-      						&& spellnum == SPE_DOUBLE_TROUBLE)
-      	    return TRUE;
-      #ifndef TAME_SUMMONING
-             if (spellnum == SPE_SUMMON_NASTIES || spellnum == SPE_TURN_UNDEAD
-                 || spellnum == SPE_FLAME_SPHERE || spellnum == SPE_FREEZE_SPHERE)
-      	    return TRUE;
-      #endif
-     } else if (adtyp == AD_CLRC) {
-      	/* healing when already healed */
-      	if (mtmp->mhp == mtmp->mhpmax && (spellnum == SPE_HEALING || spellnum == SPE_EXTRA_HEALING))
-      	    return TRUE;
-        /* cure blindness when already able to see */
-        if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
-            return TRUE;
-        /* cure sickness only when acutally sick */
-        if (!mtmp->mwither && spellnum == SPE_CURE_SICKNESS)
-            return TRUE;
-      	/* blindness spell on blinded player */
-      	if ((!haseyes(mdef->data) || mdef->mblinded) && spellnum == SPE_BLINDNESS)
-      	    return TRUE;
-        }
     return FALSE;
 }
 
@@ -1028,13 +962,10 @@ int spellnum;
     }   
     /* summon insects/sticks to snakes won't be cast by peaceful monsters
         */
-    if (mtmp->mpeaceful && spellnum == SPE_INSECT_SWARM)
+    if (mtmp->mpeaceful && !mcouldseeu  && spellnum == SPE_INSECT_SWARM)
         return TRUE;
     /* cure sickness only when acutally sick */
     if (!mtmp->mwither && spellnum == SPE_CURE_SICKNESS)
-        return TRUE;
-    /* don't summon insects if it doesn't think you're around */
-    if (!mcouldseeu && spellnum == SPE_INSECT_SWARM)
         return TRUE;
     /* blindness spell on blinded player */
     if (Blinded && spellnum == SPE_BLINDNESS)
@@ -1095,8 +1026,7 @@ register struct attack *mattk;
    	        spellnum = choose_monster_spell(mtmp, mattk->adtyp == AD_SPEL);
            		   /* not trying to attack?  don't allow directed spells */
    	    } while(--cnt > 0 &&
-   		    mspell_would_be_useless(mtmp, mdef,
-   		                            mattk->adtyp, spellnum));
+   		    spell_would_be_useless(mtmp, spellnum));
    	    if (cnt == 0)
             return 0;
 
@@ -1109,7 +1039,7 @@ register struct attack *mattk;
                    char buf[BUFSZ];
    		Sprintf(buf, "%s", Monnam(mtmp));
 
-   		if (is_undirected_spell(mattk->adtyp, spellnum))
+   		if (is_undirected_spell(spellnum))
    	            pline("%s points all around, then curses.", buf);
    		else
    	            pline("%s points at %s, then curses.",
@@ -1133,14 +1063,14 @@ register struct attack *mattk;
    	}
    	if (cansee(mtmp->mx, mtmp->my) ||
    	    canseemon(mtmp) ||
-   	    (!is_undirected_spell(mattk->adtyp, spellnum) &&
+   	    (!is_undirected_spell(spellnum) &&
    	     (cansee(mdef->mx, mdef->my) || canseemon(mdef)))) {
                char buf[BUFSZ];
    	    Sprintf(buf, " at ");
    	    Strcat(buf, mon_nam(mdef));
    	    pline("%s casts a spell%s!",
    		  canspotmon(mtmp) ? Monnam(mtmp) : "Something",
-   		  is_undirected_spell(mattk->adtyp, spellnum) ? "" : buf);
+   		  is_undirected_spell(spellnum) ? "" : buf);
    	}
 
    	if (mattk->damd)
@@ -1218,7 +1148,7 @@ register struct attack *mattk;
    	        /*aggravation is a special case;*/
          		/*it's undirected but should still target the*/
          		/*victim so as to aggravate you*/
-   	        if (is_undirected_spell(mattk->adtyp, spellnum)
+   	        if (is_undirected_spell(spellnum)
                 && (mattk->adtyp != AD_SPEL
                 || (spellnum != SPE_AGGRAVATION &&
                   spellnum != SPE_WEB &&
