@@ -62,10 +62,12 @@ static const struct spellset {
     },
     high_priest_spells[] = {
         { SPE_OPEN_WOUNDS, 1 },
+        { SPE_FORCE_BOLT, 1 },
         { SPE_PARALYZE, 5 },
         { SPE_CURE_BLINDNESS, 5},
         { SPE_INSECT_SWARM, 9 },
         { SPE_EXTRA_HEALING, 10 },
+        { SPE_SLOW_MONSTER, 10 },
         { SPE_TURN_UNDEAD, 11 },
         { SPE_CURE_SICKNESS, 11},
         { SPE_LIGHTNING, 12 },
@@ -978,6 +980,12 @@ int spellnum;
     case SPE_PSYSTRIKE:
     case SPE_CREATE_MONSTER:
     case SPE_CREATE_FAMILIAR:
+    /* ranged spells */
+    case SPE_FORCE_BOLT:
+    case SPE_SLOW_MONSTER:
+    case SPE_POLYMORPH:
+    case SPE_CANCELLATION:
+    case SPE_SLEEP:
         return TRUE;
     default:
         break;
@@ -1074,6 +1082,11 @@ int spellnum;
         return TRUE;
     if (spellnum == SPE_STONE_TO_FLESH && u.umonnum != PM_STONE_GOLEM)
         return TRUE;
+    if ((mtmp->mpeaceful || !lined_up(mtmp)) && (spellnum == SPE_FORCE_BOLT || spellnum == SPE_SLEEP
+        || spellnum == SPE_POLYMORPH || spellnum == SPE_CANCELLATION
+        || spellnum == SPE_SLOW_MONSTER))
+        return TRUE;
+    /* Prevent monsters from dealing large amounts of damage to themselves via magic missile. */
     if (spellnum == SPE_MAGIC_MISSILE && Reflecting)
         return TRUE;
     if (spellnum == SPE_KNOCK || spellnum == SPE_DRAIN_LIFE || spellnum == SPE_WIZARD_LOCK
@@ -1095,21 +1108,6 @@ buzzmu(mtmp, mattk)
 register struct monst *mtmp;
 register struct attack *mattk;
 {
-    /* cast ranged ray spells */
-    if (lined_up(mtmp) && rn2(3) && !mtmp->mcan && !mtmp->mspec_used) {
-        if (canseemon(mtmp)) pline("%s casts a spell at you!", Monnam(mtmp));
-        nomul(0);
-        if (m_knows_spell(mtmp, SPE_SLEEP)) {
-            cast_monster_spell(mtmp, 1, SPE_SLEEP, mattk->adtyp == AD_SPEL);
-        } else if (m_knows_spell(mtmp, SPE_MAGIC_MISSILE)) {
-            cast_monster_spell(mtmp, 1, SPE_MAGIC_MISSILE, mattk->adtyp == AD_SPEL);
-        } else if (m_knows_spell(mtmp, SPE_LIGHTNING)) {
-            cast_monster_spell(mtmp, 1, SPE_LIGHTNING, mattk->adtyp == AD_SPEL);
-        }
-        mtmp->mspec_used = 10 - mtmp->m_lev;
-        if (mtmp->mspec_used < 2)
-            mtmp->mspec_used = 2;
-    }
     /* don't print constant stream of curse messages for 'normal'
        spellcasting monsters at range */
     if (mattk->adtyp > AD_PSYC)
