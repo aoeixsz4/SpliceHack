@@ -1059,6 +1059,8 @@ register struct monst *mtmp;
               mpickobj(mtmp, otmp);
               (void) mongets(mtmp,SKELETON_KEY);
               m_initthrow(mtmp, GAS_GRENADE, 3);
+        } else if (ptr == &mons[PM_WIZARD_OF_YENDOR]) {
+            (void) mpickobj(mtmp, mkobj(SPBOOK_no_NOVEL, FALSE));
         } else if (ptr->msound == MS_PRIEST
                    || quest_mon_represents_role(ptr, PM_PRIEST)) {
             (void) mongets(mtmp, rn2(7) ? MYSTIC_ROBE

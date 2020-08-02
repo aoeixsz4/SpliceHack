@@ -580,13 +580,13 @@ register struct monst *magr, *mdef;
             }
             break;
         case AT_MAGC:
-         		if (dist2(magr->mx,magr->my,mdef->mx,mdef->my) > 2)
+         	if (dist2(magr->mx,magr->my,mdef->mx,mdef->my) > 2)
                 break;
-         	  res[i] = castmm(magr, mdef, mattk);
-         		if (res[i] & MM_DEF_DIED)
-         			return (MM_DEF_DIED |
+         	res[i] = castmm(magr, mdef, mattk);
+         	if (res[i] & MM_DEF_DIED)
+         		return (MM_DEF_DIED |
          				(grow_up(magr,mdef) ? 0 : MM_AGR_DIED));
-         		break;
+         	break;
         default: /* no attack */
             strike = 0;
             attk = 0;
@@ -1027,6 +1027,22 @@ int dieroll;
             else if (magr->mtame && !g.vis)
                 You(brief_feeling, "queasy");
             return MM_AGR_DIED;
+        }
+        if ((m_knows_spell(mdef, SPE_DIG) || m_knows_spell(mdef, SPE_DIG)) 
+            && !mdef->mcan && !mdef->mspec_used && mdef->mcanmove) {
+            if (g.vis && canseemon(magr)) {
+                pline("%s casts a spell, blowing a hole right through %s!", 
+                    Monnam(mdef), mon_nam(magr));
+            } else if (!Deaf) {
+                You_hear("a pained belch.");
+            }
+            if (unique_corpstat(magr->data))
+                magr->mhp = (magr->mhp + 1) / 2;
+            else
+                magr->mhp = 1; /* almost dead */
+            mdef->mspec_used = 10 - mdef->m_lev;
+   	        if (mdef->mspec_used < 2) mdef->mspec_used = 2;
+            return 0;
         }
         if (flags.verbose && !Deaf)
             verbalize("Burrrrp!");

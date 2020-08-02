@@ -22,10 +22,6 @@ static void FDECL(mplayhorn, (struct monst *, struct obj *, BOOLEAN_P));
 static void FDECL(mreadmsg, (struct monst *, struct obj *));
 static void FDECL(mquaffmsg, (struct monst *, struct obj *));
 static boolean FDECL(m_use_healing, (struct monst *));
-static int FDECL(mbhitm, (struct monst *, struct obj *));
-static void FDECL(mbhit, (struct monst *, int,
-                              int FDECL((*), (MONST_P, OBJ_P)),
-                              int FDECL((*), (OBJ_P, OBJ_P)), struct obj *));
 static struct permonst *FDECL(muse_newcham_mon, (struct monst *));
 static int FDECL(mloot_container, (struct monst *mon, struct obj *,
                                    BOOLEAN_P));
@@ -1571,7 +1567,6 @@ struct monst *mtmp;
 #undef nomore
 }
 
-static
 int
 mbhitm(mtmp, otmp)
 register struct monst *mtmp;
@@ -1586,6 +1581,7 @@ register struct obj *otmp;
             seemimic(mtmp);
     }
     switch (otmp->otyp) {
+    case SPE_FORCE_BOLT:
     case WAN_STRIKING:
         reveal_invis = TRUE;
         if (hits_you) {
@@ -1593,13 +1589,13 @@ register struct obj *otmp;
                 shieldeff(u.ux, u.uy);
                 pline("Boing!");
             } else if (rnd(20) < 10 + u.uac) {
-                pline_The("wand hits you!");
+                pline_The("force bolt hits you!");
                 tmp = d(2, 12);
                 if (Half_spell_damage)
                     tmp = (tmp + 1) / 2;
-                losehp(tmp, "wand", KILLED_BY_AN);
+                losehp(tmp, "force bolt", KILLED_BY_AN);
             } else
-                pline_The("wand misses you.");
+                pline_The("force bolt misses you.");
             stop_occupation();
             nomul(0);
         } else if (resists_magm(mtmp)) {
@@ -1607,19 +1603,27 @@ register struct obj *otmp;
             pline("Boing!");
         } else if (rnd(20) < 10 + find_mac(mtmp)) {
             tmp = d(2, 12);
-            hit("wand", mtmp, exclam(tmp));
+            hit("force bolt", mtmp, exclam(tmp));
             (void) resist(mtmp, otmp->oclass, tmp, TELL);
-            if (cansee(mtmp->mx, mtmp->my) && g.zap_oseen)
+            if (cansee(mtmp->mx, mtmp->my) && g.zap_oseen && otmp->otyp == WAN_STRIKING)
                 makeknown(WAN_STRIKING);
         } else {
-            miss("wand", mtmp);
-            if (cansee(mtmp->mx, mtmp->my) && g.zap_oseen)
+            miss("force bolt", mtmp);
+            if (cansee(mtmp->mx, mtmp->my) && g.zap_oseen && otmp->otyp == WAN_STRIKING)
                 makeknown(WAN_STRIKING);
         }
         break;
     case WAN_WINDSTORM:
-        You("get blasted by hurricane-force winds!");
-        hurtle(u.ux - mtmp->mx, u.uy - mtmp->my, 5 + rn2(5), TRUE);
+        if (hits_you) {
+            You("get blasted by hurricane-force winds!");
+            hurtle(rn1(3, -1), rn1(3, -1), 5 + rn2(5), TRUE);
+        } else {
+            if (cansee(mtmp->mx, mtmp->my) && g.zap_oseen) {
+                makeknown(WAN_WINDSTORM);
+                pline("%s is blasted by hurricane-force winds!", Monnam(mtmp));
+            }
+            mhurtle(mtmp, rn1(3, -1), rn1(3, -1), 5 + rn2(5));
+        }
         break;
     case WAN_WATER:
         reveal_invis = TRUE;
@@ -1653,6 +1657,48 @@ register struct obj *otmp;
             miss("jet of water", mtmp);
             if (cansee(mtmp->mx, mtmp->my) && g.zap_oseen)
                 makeknown(WAN_WATER);
+        }
+        break;
+    case SPE_SLOW_MONSTER:
+        if (hits_you && !defends(AD_SLOW, uwep)) {
+            u_slow_down();
+        } else if (!hits_you && mtmp->mspeed != MSLOW) {
+            unsigned int oldspeed = mtmp->mspeed;
+            mon_adjust_speed(mtmp, -1, (struct obj *) 0);
+            if (mtmp->mspeed != oldspeed && canseemon(mtmp))
+                pline("%s slows down.", Monnam(mtmp));
+        }
+        break;
+    case SPE_POLYMORPH:
+        if (hits_you && !Unchanging && !Antimagic) {
+            polyself(0);
+        } else if (!hits_you) {
+            if (resists_magm(mtmp)) {
+                shieldeff(mtmp->mx, mtmp->my);
+            } else if (mtmp->cham == NON_PM && !rn2(25)) {
+                if (canseemon(mtmp)) {
+                    pline("%s shudders!", Monnam(mtmp));
+                }
+                killed(mtmp);
+            } else if (newcham(mtmp, (struct permonst *) 0,
+                               FALSE, TRUE) != 0
+                       || (mtmp->cham >= LOW_PM
+                           && newcham(mtmp, &mons[mtmp->cham],
+                                      FALSE, TRUE) != 0)) {
+                if (has_erid(mtmp)
+                    && (!humanoid(mtmp->data) || bigmonst(mtmp->data))) {
+                    if (canseemon(mtmp))
+                        pline("%s falls off %s %s!",
+                              Monnam(mtmp), mhis(mtmp), l_monnam(ERID(mtmp)->m1));
+                    separate_steed_and_rider(mtmp);
+                }
+            }
+            if (!DEADMONSTER(mtmp) && mtmp->data == &mons[PM_LONG_WORM]) {
+                if (!has_mcorpsenm(mtmp))
+                    newmcorpsenm(mtmp);
+                MCORPSENM(mtmp) = PM_LONG_WORM;
+                g.context.bypasses = TRUE;
+            }
         }
         break;
     case WAN_TELEPORTATION:
@@ -1719,7 +1765,7 @@ register struct obj *otmp;
  * zapping you, so we need a special function for it.  (Unless someone wants
  * to merge the two functions...)
  */
-static void
+void
 mbhit(mon, range, fhitm, fhito, obj)
 struct monst *mon;  /* monster shooting the wand */
 register int range; /* direction and range */
@@ -2237,8 +2283,7 @@ struct monst *mtmp;
         nomore(MUSE_SPELLBOOK);
         if (obj->oclass == SPBOOK_CLASS 
             && (mtmp->minitspell || likes_magic(mtmp->data)) && mtmp->mcansee
-            && !m_knows_spell(mtmp, obj->otyp, TRUE) 
-            && !m_knows_spell(mtmp, obj->otyp, FALSE)
+            && !m_knows_spell(mtmp, obj->otyp)
             && mon_can_understand(mtmp, obj)) {
                 g.m.misc = obj;
                 g.m.has_misc = MUSE_SPELLBOOK;
@@ -3330,11 +3375,11 @@ boolean by_you;
     }
 
     if (!mon->mcan && !mon->mspec_used) {
-        if (m_knows_spell(mon, SPE_CURE_SICKNESS, TRUE))
+        if (m_knows_spell(mon, SPE_CURE_SICKNESS))
             return muse_unslime(mon, (struct obj *) &cg.zeroobj, 0, SPE_CURE_SICKNESS, FALSE);
-        if (m_knows_spell(mon, SPE_FIREBALL, TRUE))
+        if (m_knows_spell(mon, SPE_FIREBALL))
             return muse_unslime(mon, (struct obj *) &cg.zeroobj, 0, SPE_FIREBALL, FALSE);
-        if (m_knows_spell(mon, SPE_FLAME_PILLAR, TRUE))
+        if (m_knows_spell(mon, SPE_FLAME_PILLAR))
             return muse_unslime(mon, (struct obj *) &cg.zeroobj, 0, SPE_FLAME_PILLAR, FALSE);
     }
 

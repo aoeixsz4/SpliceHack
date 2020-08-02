@@ -43,7 +43,6 @@ static int FDECL(percent_success, (int));
 static char *FDECL(spellretention, (int, char *));
 static void NDECL(cast_protection);
 static void FDECL(spell_backfire, (int));
-static int FDECL(expltyp, (int));
 static boolean FDECL(spell_aim_step, (genericptr_t, int, int));
 
 /* The roles[] table lists the role-specific values for tuning
@@ -1426,7 +1425,7 @@ boolean atme;
     return 1;
 }
 
-static int
+int
 expltyp(spell) 
 int spell;
 {

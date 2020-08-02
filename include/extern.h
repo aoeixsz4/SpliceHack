@@ -1291,7 +1291,7 @@ E boolean FDECL(menuitem_invert_test, (int, unsigned, BOOLEAN_P));
 /* ### mcastu.c ### */
 
 E void FDECL(m_learn_spell, (struct monst *, int, BOOLEAN_P));
-E boolean FDECL(m_knows_spell, (struct monst *, int, BOOLEAN_P));
+E boolean FDECL(m_knows_spell, (struct monst *, int));
 E void FDECL(init_mon_spells, (struct monst *, BOOLEAN_P));
 E int FDECL(castmu, (struct monst *, struct attack *, BOOLEAN_P, BOOLEAN_P));
 E int FDECL(buzzmu, (struct monst *, struct attack *));
@@ -1747,9 +1747,10 @@ E boolean FDECL(find_defensive, (struct monst *, BOOLEAN_P));
 E int FDECL(use_defensive, (struct monst *));
 E int FDECL(rnd_defensive_item, (struct monst *));
 E boolean FDECL(find_offensive, (struct monst *));
-#ifdef USE_TRAMPOLI
+E void FDECL(mbhit, (struct monst *, int,
+                    int FDECL((*), (MONST_P, OBJ_P)),
+                    int FDECL((*), (OBJ_P, OBJ_P)), struct obj *));
 E int FDECL(mbhitm, (struct monst *, struct obj *));
-#endif
 E int FDECL(use_offensive, (struct monst *));
 E int FDECL(rnd_offensive_item, (struct monst *));
 E boolean FDECL(find_misc, (struct monst *));
@@ -2617,6 +2618,7 @@ E void NDECL(losespells);
 E int NDECL(dovspell);
 E void FDECL(initialspell, (struct obj *));
 E boolean NDECL(studyspell);
+E int FDECL(expltyp, (int));
 E int NDECL(throwspell);
 
 /* ### steal.c ### */

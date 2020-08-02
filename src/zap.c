@@ -753,7 +753,7 @@ struct monst *mtmp;
         spellbuf[0] = '\0';
         pline("%s knows the following spells:", noit_Monnam(mtmp));
         for (i = SPE_DIG; i < SPE_BLANK_PAPER; i++) {
-            if (m_knows_spell(mtmp, i, TRUE) || m_knows_spell(mtmp, i, FALSE)) {
+            if (m_knows_spell(mtmp, i)) {
                 Sprintf(eos(spellbuf), "%s%s", first ? "" : ", ", OBJ_NAME(objects[i]));
                 first = FALSE;
             }
@@ -2263,7 +2263,7 @@ struct obj *obj, *otmp;
                 break;
             }
             /* KMH, conduct */
-            if (!u.uconduct.polypiles++)
+            if (!g.context.mon_moving && !u.uconduct.polypiles++)
                 livelog_printf(LL_CONDUCT, "polymorphed %s first object", uhis());
             /* any saved lock context will be dangerously obsolete */
             if (Is_box(obj))

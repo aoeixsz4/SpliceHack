@@ -39,6 +39,7 @@ static const struct spellset {
         { 0, 0 }
     },
     rodney_spells[] = {
+        { SPE_SONICBOOM, 14 },
         { SPE_DOUBLE_TROUBLE, 19 },
         { SPE_TURN_UNDEAD, 19 },
         { 0, 0 }
@@ -70,6 +71,7 @@ static const struct spellset {
         { SPE_LIGHTNING, 12 },
         { SPE_FLAME_PILLAR, 13 },
         { SPE_GEYSER, 14 },
+        { SPE_DIG, 16 },
         { 0, 0 }
     };
 
@@ -100,15 +102,12 @@ boolean arcane;
 }
 
 boolean
-m_knows_spell(mtmp, spell_id, arcane)
+m_knows_spell(mtmp, spell_id)
 struct monst *mtmp;
 int spell_id;
-boolean arcane;
 {
-    if (arcane)
-        return (mtmp->arc_spls & ((uint64_t)1 << spell_id)) != 0L;
-    else
-	    return (mtmp->clr_spls & ((uint64_t)1 << spell_id)) != 0L;
+    return (mtmp->arc_spls & ((uint64_t)1 << spell_id)) != 0L
+        || (mtmp->clr_spls & ((uint64_t)1 << spell_id)) != 0L;
 }
 
 static int
@@ -119,7 +118,7 @@ boolean arcane;
     int tmp, tries = 0;
     do {
         tmp = SPE_DIG + rn2(SPE_BLANK_PAPER - SPE_DIG);
-        if (m_knows_spell(mtmp, tmp, arcane)) {
+        if (m_knows_spell(mtmp, tmp)) {
             return tmp;
         }
         tries++;
@@ -449,6 +448,8 @@ int spellnum;
 boolean arcane;
 {
     register struct trap *trtmp;
+    struct obj* pseudo;
+    int n, cx, cy;
 
     if (arcane && dmg == 0 && !is_undirected_spell(spellnum)) {
         impossible("cast directed wizard spell (%d) with dmg=0?", spellnum);
@@ -852,6 +853,87 @@ boolean arcane;
         break;
     case SPE_LIGHT:
         litroom_mon(0, 0, u.ux, u.uy);
+        dmg = 0;
+        break;
+    case SPE_DETECT_MONSTERS:
+        if (canseemon(mtmp))
+            pline("%s seems more certain of your location.", Monnam(mtmp));
+        mtmp->mux = u.ux;
+        mtmp->muy = u.uy;
+        dmg = 0;
+        break;
+    case SPE_TELEPORT_AWAY:
+        (void) rloc(mtmp, TRUE);
+        dmg = 0;
+        break;
+    case SPE_STONE_TO_FLESH:
+        if (u.umonnum == PM_STONE_GOLEM) {
+            (void) polymon(PM_FLESH_GOLEM);
+        }
+        if (Stoned) {
+            fix_petrification(); /* saved! */
+        }
+        dmg = 0;
+        break;
+    case SPE_MAGIC_MISSILE:
+    case SPE_SLEEP:
+        buzz((int) (-30 - (spellnum - SPE_MAGIC_MISSILE)), 
+            spellnum == SPE_MAGIC_MISSILE ? (mtmp->m_lev / 2) + 1 : 6, 
+            mtmp->mx, mtmp->my, sgn(g.tbx), sgn(g.tby));
+        dmg = 0;
+        break;
+    case SPE_FIREBALL:
+    case SPE_CONE_OF_COLD:
+    case SPE_POISON_BLAST:
+    case SPE_ACID_STREAM:
+    case SPE_SONICBOOM:
+    case SPE_PSYSTRIKE:
+        cx = u.ux;
+        cy = u.uy;
+        n = rnd(8) + 1;
+        while (n--) {
+                explode(u.ux, u.uy,
+                        spellnum - SPE_MAGIC_MISSILE + 10,
+                        12, 0,
+                        expltyp(spellnum));
+            cx = cx + rnd(3) - 2;
+            cy = cy + rnd(3) - 2;
+        }
+        dmg = 0;
+        break;
+    case SPE_FORCE_BOLT:
+    case SPE_POLYMORPH:
+    case SPE_CANCELLATION:
+    case SPE_SLOW_MONSTER:
+        pseudo = mksobj(spellnum, FALSE, FALSE);
+        pseudo->blessed = pseudo->cursed = 0;
+        pseudo->quan = 20L;
+        mbhit(mtmp, rn1(8, 6), mbhitm, bhito, pseudo);
+        obfree(pseudo, (struct obj *) 0);
+        dmg = 0;
+        break;
+    case SPE_CREATE_FAMILIAR:
+    case SPE_CREATE_MONSTER:
+        makemon((struct permonst*) 0, u.ux, u.uy, MM_NOERID | MM_NOCOUNTBIRTH);
+        dmg = 0;
+        break;
+    case SPE_KNOCK:
+    case SPE_DRAIN_LIFE:
+    case SPE_WIZARD_LOCK:
+    case SPE_DETECT_FOOD:
+    case SPE_CAUSE_FEAR:
+    case SPE_CLAIRVOYANCE:
+    case SPE_CHARM_MONSTER:
+    case SPE_DETECT_UNSEEN:
+    case SPE_LEVITATION:
+    case SPE_REMOVE_CURSE:
+    case SPE_MAGIC_MAPPING:
+    case SPE_DETECT_TREASURE:
+    case SPE_RESTORE_ABILITY:
+    case SPE_IDENTIFY:
+    case SPE_DIG:
+        impossible("mcastu: useless magic spell (%d)", spellnum);
+        dmg = 0;
         break;
     default:
         impossible("mcastu: invalid magic spell (%d)", spellnum);
@@ -886,6 +968,16 @@ int spellnum;
     case SPE_LIGHT:
     case SPE_PROTECTION:
     case SPE_INSECT_SWARM:
+    case SPE_DETECT_MONSTERS:
+    case SPE_TELEPORT_AWAY:
+    case SPE_FIREBALL:
+    case SPE_CONE_OF_COLD:
+    case SPE_POISON_BLAST:
+    case SPE_ACID_STREAM:
+    case SPE_SONICBOOM:
+    case SPE_PSYSTRIKE:
+    case SPE_CREATE_MONSTER:
+    case SPE_CREATE_FAMILIAR:
         return TRUE;
     default:
         break;
@@ -911,9 +1003,14 @@ int spellnum;
     /* aggravate monsters, etc. won't be cast by peaceful monsters */
     if (mtmp->mpeaceful
         && (spellnum == SPE_AGGRAVATION || spellnum == SPE_SUMMON_NASTIES
+            || spellnum == SPE_INSECT_SWARM || spellnum == SPE_CREATE_MONSTER
+            || spellnum == SPE_CREATE_FAMILIAR
             || spellnum == SPE_DOUBLE_TROUBLE || spellnum == SPE_TURN_UNDEAD
             || spellnum == SPE_FLAME_SPHERE || spellnum == SPE_FREEZE_SPHERE
-            || spellnum == SPE_WEB))
+            || spellnum == SPE_WEB || spellnum == SPE_FIREBALL
+            || spellnum == SPE_CONE_OF_COLD || spellnum == SPE_POISON_BLAST
+            || spellnum == SPE_ACID_STREAM || spellnum == SPE_SONICBOOM
+            || spellnum == SPE_PSYSTRIKE))
         return TRUE;
     /* haste self when already fast */
     if (mtmp->permspeed == MFAST && spellnum == SPE_HASTE_SELF)
@@ -935,6 +1032,11 @@ int spellnum;
         return TRUE;
     if (!m_canseeu(mtmp) && (spellnum == SPE_WEB || spellnum == SPE_LIGHT))
         return TRUE;
+    if ((!m_canseeu(mtmp) || dist2(mtmp->mx, mtmp->my, mtmp->mux, mtmp->muy) <= 5) && 
+            (spellnum == SPE_FIREBALL
+            || spellnum == SPE_CONE_OF_COLD || spellnum == SPE_POISON_BLAST
+            || spellnum == SPE_ACID_STREAM || spellnum == SPE_SONICBOOM
+            || spellnum == SPE_PSYSTRIKE))
     /* cure blindness when already able to see */
     if (mtmp->mcansee && spellnum == SPE_CURE_BLINDNESS)
         return TRUE;
@@ -959,16 +1061,27 @@ int spellnum;
             will eventually end up picking it too often] */
         if (!has_aggravatables(mtmp))
             return rn2(100) ? TRUE : FALSE;
-    }   
-    /* summon insects/sticks to snakes won't be cast by peaceful monsters
-        */
-    if (mtmp->mpeaceful && !mcouldseeu  && spellnum == SPE_INSECT_SWARM)
-        return TRUE;
+    }  
     /* cure sickness only when acutally sick */
     if (!mtmp->mwither && spellnum == SPE_CURE_SICKNESS)
         return TRUE;
     /* blindness spell on blinded player */
     if (Blinded && spellnum == SPE_BLINDNESS)
+        return TRUE;
+    /* teleportation on a notele level */
+    if (spellnum == SPE_TELEPORT_AWAY && mtmp->mflee 
+        && (noteleport_level(mtmp) || tele_restrict(mtmp)))
+        return TRUE;
+    if (spellnum == SPE_STONE_TO_FLESH && u.umonnum != PM_STONE_GOLEM)
+        return TRUE;
+    if (spellnum == SPE_MAGIC_MISSILE && Reflecting)
+        return TRUE;
+    if (spellnum == SPE_KNOCK || spellnum == SPE_DRAIN_LIFE || spellnum == SPE_WIZARD_LOCK
+        || spellnum == SPE_DETECT_FOOD || spellnum == SPE_CAUSE_FEAR || spellnum == SPE_CLAIRVOYANCE
+        || spellnum == SPE_CHARM_MONSTER || spellnum == SPE_DETECT_UNSEEN || spellnum == SPE_LEVITATION
+        || spellnum == SPE_REMOVE_CURSE || spellnum == SPE_MAGIC_MAPPING
+        || spellnum == SPE_DETECT_TREASURE || spellnum == SPE_RESTORE_ABILITY || spellnum == SPE_IDENTIFY
+        || spellnum == SPE_DIG)
         return TRUE;
     return FALSE;
 }
@@ -982,6 +1095,21 @@ buzzmu(mtmp, mattk)
 register struct monst *mtmp;
 register struct attack *mattk;
 {
+    /* cast ranged ray spells */
+    if (lined_up(mtmp) && rn2(3) && !mtmp->mcan && !mtmp->mspec_used) {
+        if (canseemon(mtmp)) pline("%s casts a spell at you!", Monnam(mtmp));
+        nomul(0);
+        if (m_knows_spell(mtmp, SPE_SLEEP)) {
+            cast_monster_spell(mtmp, 1, SPE_SLEEP, mattk->adtyp == AD_SPEL);
+        } else if (m_knows_spell(mtmp, SPE_MAGIC_MISSILE)) {
+            cast_monster_spell(mtmp, 1, SPE_MAGIC_MISSILE, mattk->adtyp == AD_SPEL);
+        } else if (m_knows_spell(mtmp, SPE_LIGHTNING)) {
+            cast_monster_spell(mtmp, 1, SPE_LIGHTNING, mattk->adtyp == AD_SPEL);
+        }
+        mtmp->mspec_used = 10 - mtmp->m_lev;
+        if (mtmp->mspec_used < 2)
+            mtmp->mspec_used = 2;
+    }
     /* don't print constant stream of curse messages for 'normal'
        spellcasting monsters at range */
     if (mattk->adtyp > AD_PSYC)

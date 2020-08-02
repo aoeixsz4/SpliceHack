@@ -74,12 +74,14 @@ QOL
 Monster Spellcasting
 - Monsters have spell lists that vary based on the individual monster.
 - Probing a spellcasting monster will display its spell list.
-- The Wizard of Yendor has an enormous spell list, making him highly unpredictable
-  to fight against.
+- The Wizard of Yendor has a dangerous spell list, and additionally appears
+  with a single random spellbook.
 - Monsters can pick up and read spellbooks, allowing them to learn new spells.
 - Monsters can cast flame pillar, fireball, and cure sickness in order to
   save themselves from being slimed. The odds of this ever happening are at best
   unlikely, but this is NetHack, after all.
+- Monsters with the dig spell can escape digestion by blowing a hole in the swallowing
+  monster.
 - Removed ability for players to cast most monster spells when polymorphed, and for
   monsters to cast monster spells at each other. Although this was a difficult decision
   to make, the code for casting was pulled from GruntHack, and was very difficult to
@@ -241,6 +243,8 @@ Miscelaneous
   eat, eating a hunger hulk corpse will actually make you hungrier. Fantastic YANI
   from aosdict.
 - Prevent boulders from being pushed while running (RojjaCebolla)
+- Minor rewording for wand of striking messages, in order to facillitate monsters using
+  force bolt.
 
 Balance
 - Being deaf does not make you resistant to sonic attacks.
