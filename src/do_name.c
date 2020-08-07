@@ -1850,6 +1850,10 @@ boolean called;
        "priest" or "priestess" (normally handled by priestname()) */
     if (mdat == &mons[PM_ALIGNED_PRIEST])
         pm_name = mtmp->female ? "priestess" : "priest";
+    else if (mdat == &mons[PM_MAD_ALIGNED_PRIEST])
+        pm_name = mtmp->female ? "mad priestess" : "mad priest";
+    else if (mdat == &mons[PM_PENITENT_ALIGNED_PRIEST])
+        pm_name = mtmp->female ? "penitent priestess" : "penitent priest";
     else if (mdat == &mons[PM_HIGH_PRIEST] && mtmp->female)
         pm_name = "high priestess";
 

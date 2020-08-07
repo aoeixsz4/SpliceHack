@@ -1096,7 +1096,7 @@ struct monst *mon;
            protection is too easy); it confers minimum mc 1 instead of 0 */
         if ((is_you && ((HProtection && u.ublessed > 0) || u.uspellprot))
             /* aligned priests and angels have innate intrinsic Protection */
-            || (mon->data == &mons[PM_ALIGNED_PRIEST] || is_minion(mon->data)))
+            || (is_aligned_priest(mon->data) || is_minion(mon->data)))
             mc = 1;
     }
     return mc;

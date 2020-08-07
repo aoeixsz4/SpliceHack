@@ -209,7 +209,7 @@ boolean talk;
             EMIN(mon)->renegade = FALSE;
         }
     } else if (!is_shopkeeper(&mons[mnum]) && mnum != PM_GUARD
-               && mnum != PM_ALIGNED_PRIEST && mnum != PM_HIGH_PRIEST) {
+               && !is_aligned_priest(&mons[mnum]) && mnum != PM_HIGH_PRIEST) {
         /* This was mons[mnum].pxlth == 0 but is this restriction
            appropriate or necessary now that the structures are separate? */
         mon = makemon(&mons[mnum], u.ux, u.uy, MM_EMIN);

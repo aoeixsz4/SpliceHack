@@ -2998,8 +2998,11 @@ struct obj *from_obj;
     /* SHOPKEEPERS can be revived now */
     if (*mtype == PM_GUARD 
         || ((*mtype == PM_SHOPKEEPER || *mtype == PM_EXTRAPLANAR_MERCHANT) && !revival)
-        || *mtype == PM_HIGH_PRIEST || *mtype == PM_ALIGNED_PRIEST
+        || *mtype == PM_HIGH_PRIEST
         || *mtype == PM_ANGEL) {
+        *mtype = PM_HUMAN_ZOMBIE;
+        return TRUE;
+    } else if (is_aligned_priest(&mons[*mtype])) {
         *mtype = PM_HUMAN_ZOMBIE;
         return TRUE;
     } else if (*mtype == PM_LONG_WORM_TAIL) { /* for create_particular() */

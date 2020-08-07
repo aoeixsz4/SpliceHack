@@ -813,6 +813,8 @@ const char **remainder_p;
             /* More alternates; priest and priestess are separate monster
                types but that isn't the case for {aligned,high} priests */
             { "aligned priestess", PM_ALIGNED_PRIEST },
+            { "mad aligned priestess", PM_MAD_ALIGNED_PRIEST },
+            { "penitent aligned priestess", PM_PENITENT_ALIGNED_PRIEST },
             { "high priestess", PM_HIGH_PRIEST },
             /* Inappropriate singularization by -ves check above */
             { "master of thief", PM_MASTER_OF_THIEVES },
@@ -1130,6 +1132,8 @@ static const short grownups[][2] = {
     { PM_MARTIAL_ARTIST, PM_MARTIAL_MASTER },
     { PM_WATCHMAN, PM_WATCH_CAPTAIN },
     { PM_ALIGNED_PRIEST, PM_HIGH_PRIEST },
+    { PM_MAD_ALIGNED_PRIEST, PM_HIGH_PRIEST },
+    { PM_PENITENT_ALIGNED_PRIEST, PM_HIGH_PRIEST },
     { PM_STUDENT, PM_ARCHEOLOGIST },
     { PM_ATTENDANT, PM_HEALER },
     { PM_PAGE, PM_KNIGHT },

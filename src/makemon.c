@@ -1895,7 +1895,7 @@ long mmflags;
        types; make sure their extended data is initialized to
        something sensible if caller hasn't specified MM_EPRI|MM_EMIN
        (when they're specified, caller intends to handle this itself) */
-    if ((mndx == PM_ALIGNED_PRIEST || mndx == PM_HIGH_PRIEST)
+    if ((is_aligned_priest(&mons[mndx]) || mndx == PM_HIGH_PRIEST)
             ? !(mmflags & (MM_EPRI | MM_EMIN))
             : (mndx == PM_ANGEL && !(mmflags & MM_EMIN) && !rn2(3))) {
         struct emin *eminp;

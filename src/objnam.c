@@ -1497,7 +1497,9 @@ unsigned cxn_flags; /* bitmask of CXN_xxx values */
         mname = "thing";
         /* [Possible enhancement:  check whether corpse has monster traits
             attached in order to use priestname() for priests and minions.] */
-    } else if (omndx == PM_ALIGNED_PRIEST) {
+    } else if (omndx == PM_ALIGNED_PRIEST 
+               || omndx == PM_MAD_ALIGNED_PRIEST
+               || omndx == PM_PENITENT_ALIGNED_PRIEST) {
         /* avoid "aligned priest"; it just exposes internal details */
         mname = "priest";
     } else {

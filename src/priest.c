@@ -11,6 +11,7 @@
 
 static boolean FDECL(histemple_at, (struct monst *, XCHAR_P, XCHAR_P));
 static boolean FDECL(has_shrine, (struct monst *));
+static int NDECL(rnd_priest);
 
 void
 newepri(mtmp)
@@ -221,6 +222,17 @@ register struct monst *priest;
     return move_special(priest, FALSE, TRUE, FALSE, avoid, omx, omy, gx, gy);
 }
 
+/* get a random type of priest */
+int
+rnd_priest()
+{
+    switch (rn2(4)) {
+    case 0: return PM_PENITENT_ALIGNED_PRIEST;
+    case 1: return PM_MAD_ALIGNED_PRIEST;
+    default: return PM_ALIGNED_PRIEST;
+    }
+}
+
 /* exclusively for mktemple() */
 void
 priestini(lvl, sroom, sx, sy, sanctum)
@@ -233,7 +245,7 @@ boolean sanctum; /* is it the seat of the high priest? */
     struct obj *otmp;
     int cnt;
     int px = 0, py = 0, i, si = rn2(8);
-    struct permonst *prim = &mons[sanctum ? PM_HIGH_PRIEST : PM_ALIGNED_PRIEST];
+    struct permonst *prim = &mons[sanctum ? PM_HIGH_PRIEST : rnd_priest()];
 
     for (i = 0; i < 8; i++) {
         px = sx + xdir[(i+si) % 8];
@@ -310,7 +322,7 @@ register struct monst *mon;
 char *pname; /* caller-supplied output buffer */
 {
     boolean do_hallu = Hallucination,
-            aligned_priest = mon->data == &mons[PM_ALIGNED_PRIEST],
+            aligned_priest = is_aligned_priest(mon->data),
             high_priest = mon->data == &mons[PM_HIGH_PRIEST];
     char whatcode = '\0';
     const char *what = do_hallu ? rndmonnam(&whatcode) : mon->data->mname;
@@ -332,6 +344,10 @@ char *pname; /* caller-supplied output buffer */
         } else {
             if (high_priest)
                 Strcat(pname, "high ");
+            if (mon->data == &mons[PM_MAD_ALIGNED_PRIEST])
+                Strcat(pname, "mad ");
+            if (mon->data == &mons[PM_PENITENT_ALIGNED_PRIEST])
+                Strcat(pname, "penitent ");
             if (Hallucination)
                 what = "poohbah";
             else if (mon->female)
@@ -704,7 +720,7 @@ register struct monst *roamer;
 {
     if (!roamer->isminion)
         return;
-    if (roamer->data != &mons[PM_ALIGNED_PRIEST]
+    if (!is_aligned_priest(roamer->data)
         && roamer->data != &mons[PM_ANGEL])
         return;
 

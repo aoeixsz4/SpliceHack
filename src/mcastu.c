@@ -26,13 +26,35 @@ static const struct spellset {
     },
     cleric_spells[] = {
         { SPE_OPEN_WOUNDS, 1 },
-        { SPE_PROTECTION, 1 },
         { SPE_HEALING, 2 },
         { SPE_CONFUSE_MONSTER, 3 },
         { SPE_PARALYZE, 5 },
         { SPE_BLINDNESS, 6 },
         { SPE_INSECT_SWARM, 9 },
         { SPE_CURSE_ITEMS, 10 },
+        { SPE_LIGHTNING, 12 },
+        { SPE_FLAME_PILLAR, 13 },
+        { SPE_GEYSER, 14 },
+        { SPE_EXTRA_HEALING, 18 },
+        { 0, 0 }
+    },
+    discord_priest_spells[] = {
+        { SPE_OPEN_WOUNDS, 1 },
+        { SPE_CONFUSE_MONSTER, 3 },
+        { SPE_STUN, 4 },
+        { SPE_JUMPING, 7 },
+        { SPE_CREATE_MONSTER, 9 },
+        { SPE_CURSE_ITEMS, 10 },
+        { SPE_POLYMORPH, 12 },
+        { SPE_ACID_STREAM, 14 },
+        { 0, 0 }
+    },
+    law_priest_spells[] = {
+        { SPE_OPEN_WOUNDS, 1 },
+        { SPE_HEALING, 2 },
+        { SPE_PARALYZE, 5 },
+        { SPE_BLINDNESS, 6 },
+        { SPE_DIG, 10 },
         { SPE_LIGHTNING, 12 },
         { SPE_FLAME_PILLAR, 13 },
         { SPE_GEYSER, 14 },
@@ -147,20 +169,27 @@ struct monst* mtmp;
 boolean arcane;
 {
     const struct spellset *spells = arcane ? mage_spells : cleric_spells;
+    boolean defaults = TRUE;
 
     if (mtmp->minitspell)
         return;
-
-    /* Default spells */
-    m_learn_spell_list(mtmp, spells, arcane);
-    /* Rodney spells */
-    if (mtmp->data == &mons[PM_WIZARD_OF_YENDOR]) {
+    
+    if (mtmp->data == &mons[PM_MAD_ALIGNED_PRIEST]) {
+        m_learn_spell_list(mtmp, discord_priest_spells, TRUE);
+        defaults = FALSE;
+    } else if (mtmp->data == &mons[PM_PENITENT_ALIGNED_PRIEST]) {
+        m_learn_spell_list(mtmp, law_priest_spells, TRUE);
+        defaults = FALSE;
+    } else if (mtmp->data == &mons[PM_WIZARD_OF_YENDOR]) {
         m_learn_spell_list(mtmp, rodney_spells, TRUE);
     } else if (is_undead(mtmp->data) && arcane) {
         m_learn_spell_list(mtmp, undead_mage_spells, arcane);
     } else if (mtmp->data == &mons[PM_HIGH_PRIEST]) {
         m_learn_spell_list(mtmp, high_priest_spells, arcane);
     }
+
+    if (defaults)
+        m_learn_spell_list(mtmp, spells, arcane);
     mtmp->minitspell = 1;
 }
 

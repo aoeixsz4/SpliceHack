@@ -259,6 +259,10 @@
      || (ptr) == &mons[PM_ELF] || (ptr) == &mons[PM_HUMAN] \
      || (ptr) == &mons[PM_MINOR_ANGEL] || (ptr) == &mons[PM_INFERNAL] \
      || (ptr) == &mons[PM_CHANGELING])
+#define is_aligned_priest(ptr)                          \
+    ((ptr) == &mons[PM_ALIGNED_PRIEST] \
+     || (ptr) == &mons[PM_MAD_ALIGNED_PRIEST] \
+     || (ptr) == &mons[PM_PENITENT_ALIGNED_PRIEST])
 /* return TRUE if the monster tends to revive */
 #define is_reviver(ptr) (is_rider(ptr) || (ptr)->mlet == S_TROLL \
                          || (ptr) == &mons[PM_SLOTH])
