@@ -262,6 +262,7 @@ struct obj *weapon; /* uwep or uswapwep or NULL */
 int *attk_count, *role_roll_penalty;
 {
     int tmp, tmp2;
+    struct monst * flanker;
 
     *role_roll_penalty = 0; /* default is `none' */
 
@@ -275,6 +276,7 @@ int *attk_count, *role_roll_penalty;
     }
 
     /* adjust vs. (and possibly modify) monster state */
+    flanker = find_flanker(&g.youmonst, mtmp);
     if (mtmp->mstun)
         tmp += 2;
     if (mtmp->mflee)
@@ -290,6 +292,10 @@ int *attk_count, *role_roll_penalty;
             mtmp->mcanmove = 1;
             mtmp->mfrozen = 0;
         }
+    }
+    if (flanker) {
+        if (canseemon(flanker)) You("flank %s!", mon_nam(mtmp));
+        tmp += 5;
     }
 
     /* role/race adjustments */

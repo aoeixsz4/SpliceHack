@@ -3316,6 +3316,36 @@ boolean k_format;
     }
 }
 
+struct monst *
+find_flanker(magr, mdef)
+struct monst* magr;
+struct monst* mdef;
+{
+    boolean you_attack = (magr == &g.youmonst);
+    boolean you_defend = (mdef == &g.youmonst);
+    int px, py;
+    struct monst* flanker;
+
+    if (you_attack) {
+        px = u.ux + (2 * u.dx);
+        py = u.uy + (2 * u.uy);
+        flanker = g.level.monsters[px][py];
+        if (flanker && flanker->mtame && flanker->mcanmove && flanker->mcansee) return flanker;
+    } else if (you_defend) {
+        px = (magr->mx > u.ux) ? (magr->mx - 2) : (magr->mx < u.ux) ? (magr->mx + 2) : magr->mx;
+        py = (magr->my > u.uy) ? (magr->my - 2) : (magr->my < u.uy) ? (magr->my + 2) : magr->my;
+        flanker = g.level.monsters[px][py];
+        if (flanker && !flanker->mpeaceful && flanker->mcanmove && flanker->mcansee) return flanker;
+    } else {
+        px = (magr->mx > mdef->mx) ? (magr->mx - 2) : (magr->mx < mdef->mx) ? (magr->mx + 2) : magr->mx;
+        py = (magr->my > mdef->my) ? (magr->my - 2) : (magr->my < mdef->my) ? (magr->my + 2) : magr->my;
+        flanker = g.level.monsters[px][py];
+        if (flanker == &g.youmonst && !mdef->mpeaceful && canseemon(mdef) && !u.usleep && !g.multi) return flanker;
+        else if (flanker && flanker->mtame && flanker->mcanmove && flanker->mcansee) return flanker;
+    }
+    return (struct monst *) 0;
+}
+
 int
 weight_cap()
 {

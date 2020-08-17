@@ -313,6 +313,7 @@ register struct monst *magr, *mdef;
     struct obj *mwep;
     struct obj * marmf = which_armor(magr, W_ARMF);
     struct permonst *pa, *pd;
+    struct monst* flanker;
 
     if (!magr || !mdef)
         return MM_MISS; /* mike@genat */
@@ -343,9 +344,13 @@ register struct monst *magr, *mdef;
 
     /* Calculate the armour class differential. */
     tmp = find_mac(mdef) + magr->m_lev;
+    flanker = find_flanker(magr, mdef);
     if (mdef->mconf || !mdef->mcanmove || mdef->msleeping) {
         tmp += 4;
         mdef->msleeping = 0;
+    }
+    if (flanker) {
+        tmp += 5;
     }
 
     /* undetect monsters become un-hidden if they are attacked */

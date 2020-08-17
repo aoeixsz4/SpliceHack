@@ -468,6 +468,7 @@ register struct monst *mtmp;
     int i, j, k = 0, tmp, sum[NATTK];
     struct permonst *mdat = mtmp->data;
     struct obj * marmf = which_armor(mtmp, W_ARMF);
+    struct monst * flanker;
     /*
      * ranged: Is it near you?  Affects your actions.
      * ranged2: Does it think it's near you?  Affects its actions.
@@ -693,6 +694,7 @@ register struct monst *mtmp;
     /*  Work out the armor class differential   */
     tmp = AC_VALUE(u.uac) + 10; /* tmp ~= 0 - 20 */
     tmp += mtmp->m_lev;
+    flanker = find_flanker(mtmp, &g.youmonst);
     if (g.multi < 0)
         tmp += 4;
     if ((Invis && !perceives(mdat)) || !mtmp->mcansee)
@@ -701,6 +703,10 @@ register struct monst *mtmp;
         tmp -= 2;
     if (tmp <= 0)
         tmp = 1;
+    if (flanker) {
+        if (canseemon(flanker)) pline("%s flanks you!", Monnam(mtmp));
+        tmp += 5;
+    }
 
     /* make eels visible the moment they hit/miss us */
     if (mdat->mlet == S_EEL && mtmp->minvis && cansee(mtmp->mx, mtmp->my)) {
