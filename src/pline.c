@@ -262,7 +262,7 @@ VA_DECL(const char *, line)
 #endif
 
    	if(Role_if(PM_PIRATE)){
-     		line = piratesay(line);
+     	line = piratesay(line);
    	} else if(Role_if(PM_CARTOMANCER)) {
         line = cartsay(line);
     }

@@ -427,8 +427,8 @@ register struct monst *magr, *mdef;
             }
             possibly_unwield(magr, FALSE);
             if ((mwep = MON_WEP(magr)) != 0) {
-                if (g.vis)
-                    mswingsm(magr, mdef, mwep);
+                /* if (g.vis)
+                    mswingsm(magr, mdef, mwep); */
                 tmp += hitval(mwep, mdef);
             }
             /*FALLTHRU*/
@@ -682,8 +682,10 @@ int dieroll;
                         is_ammo(MON_WEP(magr)) ||
                         is_pole(MON_WEP(magr)))
                             Sprintf(buf,"%s hits", magr_name);
-                    else Sprintf(buf,"%s %s", magr_name,
-                        makeplural(weaphitmsg(MON_WEP(magr),FALSE)));
+                    else Sprintf(buf,"%s %s with %s%s %s", magr_name,
+                        makeplural(weaphitmsg(MON_WEP(magr),FALSE)),
+                        (MON_WEP(magr)->quan > 1L) ? "one of " : "",
+                        mhis(magr), xname(MON_WEP(magr)));
                     break;
                 } /*FALLTHRU*/
             case AT_HUGS:

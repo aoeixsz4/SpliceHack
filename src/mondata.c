@@ -1042,6 +1042,8 @@ unsigned pg_flags; /* flags&1: 'no it' unless neuter,
         return rn2(4); /* 0..3 */
     if (!override_vis && !canspotmon(mtmp))
         return 2;
+    if (!canspotmon(mtmp))
+        return 4;
     if (is_neuter(mtmp->data))
         return 2;
     return (humanoid(mtmp->data) || (mtmp->data->geno & G_UNIQ)

@@ -293,7 +293,7 @@ int *attk_count, *role_roll_penalty;
             mtmp->mfrozen = 0;
         }
     }
-    if (flanker) {
+    if (distu(mtmp->mx, mtmp->my) <= 2 && flanker) {
         if (canseemon(flanker)) You("flank %s!", mon_nam(mtmp));
         tmp += 5;
     }

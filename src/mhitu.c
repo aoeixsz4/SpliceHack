@@ -152,8 +152,10 @@ struct attack *mattk;
                     is_ammo(MON_WEP(mtmp)) ||
                     is_pole(MON_WEP(mtmp)))
                         pfmt = "%s hits!";
-                else pline("%s %s you!", Monst_name,
-                    makeplural(weaphitmsg(MON_WEP(mtmp),FALSE)));
+                else pline("%s %s you with %s%s %s!", Monst_name,
+                    makeplural(weaphitmsg(MON_WEP(mtmp),FALSE)),
+                    (MON_WEP(mtmp)->quan > 1L) ? "one of " : "",
+                    mhis(mtmp), xname(MON_WEP(mtmp)));
                 break;
             } /*fallthrough*/
         case AT_CLAW:
@@ -694,7 +696,6 @@ register struct monst *mtmp;
     /*  Work out the armor class differential   */
     tmp = AC_VALUE(u.uac) + 10; /* tmp ~= 0 - 20 */
     tmp += mtmp->m_lev;
-    flanker = find_flanker(mtmp, &g.youmonst);
     if (g.multi < 0)
         tmp += 4;
     if ((Invis && !perceives(mdat)) || !mtmp->mcansee)
@@ -703,9 +704,12 @@ register struct monst *mtmp;
         tmp -= 2;
     if (tmp <= 0)
         tmp = 1;
-    if (flanker) {
-        if (canseemon(flanker)) pline("%s flanks you!", Monnam(mtmp));
-        tmp += 5;
+    if (!ranged) {
+        flanker = find_flanker(mtmp, &g.youmonst);
+        if (flanker) {
+            if (canseemon(flanker)) pline("%s flanks you!", Monnam(mtmp));
+            tmp += 5;
+        }
     }
 
     /* make eels visible the moment they hit/miss us */
@@ -872,7 +876,7 @@ register struct monst *mtmp;
                     if (mon_currwep) {
                         hittmp = hitval(mon_currwep, &g.youmonst);
                         tmp += hittmp;
-                        mswings(mtmp, mon_currwep);
+                        /* mswings(mtmp, mon_currwep); */
                     }
                     if (tmp > (j = g.mhitu_dieroll = rnd(20 + i)))
                         sum[i] = hitmu(mtmp, mattk);
