@@ -1,6 +1,7 @@
 /* NetHack 3.6	worn.c	$NHDT-Date: 1550524569 2019/02/18 21:16:09 $  $NHDT-Branch: NetHack-3.6.2-beta01 $:$NHDT-Revision: 1.56 $ */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /*-Copyright (c) Robert Patrick Rankin, 2013. */
+/* Copyright (c) Joanna Janet Zaitseva-Doyle <jjadoyle@gmail.com>, 2020 (doggo hats patch) */
 /* NetHack may be freely redistributed.  See license for details. */
 
 /* Edited on 5/7/18 by NulLCGT */
@@ -522,6 +523,11 @@ register struct monst *mon;
 boolean creation;
 {
 #define RACE_EXCEPTION TRUE
+    /* DOGGO HATS: add check here for doggo_wants_hat before the is_animal()
+     * check bails us out of the function */
+    if (is_doggo(mon->data))
+        m_dowear_type(mon, W_ARMH, creation, FALSE);
+
     /* Note the restrictions here are the same as in dowear in do_wear.c
      * except for the additional restriction on intelligence.  (Players
      * are always intelligent, even if polymorphed).

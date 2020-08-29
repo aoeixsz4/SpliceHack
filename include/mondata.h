@@ -1,5 +1,6 @@
 /* NetHack 3.6	mondata.h	$NHDT-Date: 1586178708 2020/04/06 13:11:48 $  $NHDT-Branch: NetHack-3.7 $:$NHDT-Revision: 1.43 $ */
 /* Copyright (c) 1989 Mike Threepoint				  */
+/* Copyright (c) Joanna Janet Zaitseva-Doyle <jjadoyle@gmail.com>, 2020 (doggo hats patch) */
 /* NetHack may be freely redistributed.  See license for details. */
 /* Edited 5/12/18 by NullCGT */
 
@@ -183,6 +184,8 @@
                           (ptr) == &mons[PM_KANGAROO])
 #define is_golem(ptr) ((ptr)->mlet == S_GOLEM)
 #define is_jumper(ptr) (((ptr)->mflags2 & M2_JUMPER) != 0L)
+#define is_doggo(ptr) ((ptr) == &mons[PM_LITTLE_DOG] || (ptr) == &mons[PM_DOG] \
+                               || (ptr) == &mons[PM_LARGE_DOG])
 #define is_domestic(ptr) ((((ptr)->mflags2 & M2_DOMESTIC) != 0L) \
      || (Role_if(PM_DRAGONMASTER) && (((ptr) >= &mons[PM_BABY_GRAY_DRAGON] && \
                              (ptr) <= &mons[PM_YELLOW_DRAGON]))))
